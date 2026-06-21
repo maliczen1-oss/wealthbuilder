@@ -9,7 +9,10 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
 const METAAPI_TOKEN = process.env.METAAPI_TOKEN;
-const ACCOUNT_ID console.log(
+const ACCOUNT_ID = process.env.METAAPI_ACCOUNT_ID;
+const PORT = process.env.PORT || 3000;
+
+console.log(
   'METAAPI_TOKEN:',
   METAAPI_TOKEN ? 'SET' : 'MISSING'
 );
@@ -17,7 +20,7 @@ const ACCOUNT_ID console.log(
 console.log(
   'METAAPI_ACCOUNT_ID:',
   ACCOUNT_ID ? 'SET' : 'MISSING'
-); = process.env.METAAPI_ACCOUNT_ID;
+);
 const PORT = process.env.PORT || 3000;
 
 const METAAPI_PROVISIONING_URL =
