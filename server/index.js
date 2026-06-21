@@ -21,7 +21,7 @@ console.log(
   'METAAPI_ACCOUNT_ID:',
   ACCOUNT_ID ? 'SET' : 'MISSING'
 );
-const PORT = process.env.PORT || 3000;
+
 
 const METAAPI_PROVISIONING_URL =
   'https://mt-provisioning-api-v1.agiliumtrade.ai';
