@@ -1,1 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WealthBuilder Dashboard</title>
 
+<style>
+body{
+  font-family:Arial,sans-serif;
+  background:#111827;
+  color:#ffffff;
+  margin:0;
+  padding:20px;
+}
+
+.card{
+  background:#1f2937;
+  padding:20px;
+  border-radius:10px;
+  margin-bottom:20px;
+}
+
+h1,h2{
+  margin-top:0;
+}
+
+button{
+  padding:10px 15px;
+  border:none;
+  border-radius:6px;
+  cursor:pointer;
+  background:#2563eb;
+  color:white;
+}
+
+button:hover{
+  opacity:0.9;
+}
+
+pre{
+  overflow:auto;
+  white-space:pre-wrap;
+  word-wrap:break-word;
+}
+</style>
+</head>
+
+<body>
+
+<h1>WealthBuilder</h1>
+
+<div class="card">
+  <h2>Health Check</h2>
+  <button onclick="loadHealth()">Check Server</button>
+  <pre id="health"></pre>
+</div>
+
+<div class="card">
+  <h2>Account Information</h2>
+  <button onclick="loadAccount()">Load Account</button>
+  <pre id="account"></pre>
+</div>
+
+<div class="card">
+  <h2>Open Positions</h2>
+  <button onclick="loadPositions()">Load Positions</button>
+  <pre id="positions"></pre>
+</div>
+
+<div class="card">
+  <h2>Trade History</h2>
+  <button onclick="loadHistory()">Load History</button>
+  <pre id="history"></pre>
+</div>
+
+<script>
+
+async function api(url){
+  const response = await fetch(url);
+
+  if(!response.ok){
+    throw new Error(await response.text());
+  }
+
+  return response.json();
+}
+
+async function loadHealth(){
+  try{
+    const data = await api('/api/health');
+    document.getElementById('health').textContent =
+      JSON.stringify(data,null,2);
+  }catch(err){
+    document.getElementById('health').textContent =
+      err.message;
+  }
+}
+
+async function loadAccount(){
+  try{
+    const data = await api('/api/account');
+    document.getElementById('account').textContent =
+      JSON.stringify(data,null,2);
+  }catch(err){
+    document.getElementById('account').textContent =
+      err.message;
+  }
+}
+
+async function loadPositions(){
+  try{
+    const data = await api('/api/positions');
+    document.getElementById('positions').textContent =
+      JSON.stringify(data,null,2);
+  }catch(err){
+    document.getElementById('positions').textContent =
+      err.message;
+  }
+}
+
+async function loadHistory(){
+  try{
+    const data = await api('/api/history');
+    document.getElementById('history').textContent =
+      JSON.stringify(data,null,2);
+  }catch(err){
+    document.getElementById('history').textContent =
+      err.message;
+  }
+}
+
+loadHealth();
+
+</script>
+
+</body>
+</html>
