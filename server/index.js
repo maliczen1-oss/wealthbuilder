@@ -24,7 +24,7 @@ console.log(
 
 
 const METAAPI_PROVISIONING_URL =
-  'https://mt-provisioning-api-v1.agiliumtrade.ai';
+  'https://mt-provisioning-api-v1.metaapi.cloud';
 
 let CLIENT_API_URL = null;
 
