@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
+<title>WealthBuilder — Live Account Dashboard</title>
+<style>
+  :root{
+    --bg:#1a1e2e; --surface:#222840; --card:#2a3050; --border:#3a4060;
+    --text:#e8eaf6; --text2:#9fa8da; --green:#26a69a; --red:#ef5350; --gold:#ffd700;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:-apple-system,Roboto,sans-serif;padding:16px;max-width:900px;margin:0 auto}
+  h1{font-size:18px;margin-bottom:4px}
+  .sub{color:var(--text2);font-size:12px;margin-bottom:20px}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:14px}
+  .card h2{font-size:13px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px}
+  .row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px}
+  .row:last-child{border-bottom:none}
+  .stat{font-family:monospace;font-weight:600}
+  .pos{color:var(--green)} .neg{color:var(--red)}
+  .badge{display:inline-block;font-size:10px;padding:2px 8px;border-radius:10px;font-weight:600}
+  .badge.live{background:rgba(38,166,154,.2);color:var(--green)}
+  .badge.err{background:rgba(239,83,80,.2);color:var(--red)}
+  .badge.readonly{background:rgba(255,215,0,.15);color:var(--gold)}
+  button{background:var(--card);border:1px solid var(--border);color:var(--text);padding:10px 16px;border-radius:6px;font-size:13px;cursor:pointer;margin-right:8px;margin-bottom:8px}
+  button:hover{background:var(--border)}
+  input,select{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:8px;border-radius:4px;font-size:13px;margin-right:8px}
+  .loading{color:var(--text2);font-size:12px}
+  table{width:100%;border-collapse:collapse;font-size:12px}
+  th{text-align:left;color:var(--text2);padding:6px;border-bottom:1px solid var(--border);font-weight:500}
+  td{padding:6px;border-bottom:1px solid var(--border);font-family:monospace}
+  .warn{background:rgba(255,152,0,.1);border:1px solid rgba(255,152,0,.3);border-radius:6px;padding:10px;font-size:11px;color:#ffb74d;margin-bottom:14px}
+  .disclosure{font-size:10px;color:var(--text2);margin-top:6px;line-height:1.5}
+</style>
+</head>
+<body>
+
+<h1>WealthBuilder — Live Account</h1>
+<div class="sub">Connected to your real MT5 account via your own server. No simulated data.</div>
+
+<div class="warn">
+  ⚠️ Read-only build. This dashboard displays real account data and runs real
+  backtests against real historical candles. It does <strong>not</strong> place trades.
+  Auto-execution requires a separate, explicitly-approved step with risk guardrails.
+</div>
+
+<div class="card">
+  <h2>Account <span id="acctBadge" class="badge"></span></h2>
+  <div id="acctBody" class="loading">Loading live account data…</div>
+</div>
+
+<div class="card">
+  <h2>Open Positions <span id="posBadge" class="badge"></span></h2>
+  <div id="posBody" class="loading">Loading…</div>
+</div>
+
+<div class="card">
+  <h2>Recent Closed Trades (real history) <span id="histBadge" class="badge"></span></h2>
+  <div id="histBody" class="loading">Loading…</div>
+</div>
+
+<div class="card">
+  <h2>Real Backtest Engine</h2>
+  <div class="disclosure">
+    Runs an MA-crossover + RSI strategy against actual historical candles from your
+    broker via MetaApi. Results are whatever the math produces — including losses.
+    This is a starting strategy, not a tuned one. Edit <code>server/backtest.js</code>
+    to test your own rules.
+  </div>
+  <br/>
+  <div>
+    <select id="btSymbol">
+      <option value="EURUSD">EURUSD</option>
+      <option value="GBPUSD">GBPUSD</option>
+      <option value="USDJPY">USDJPY</option>
+      <option value="XAUUSD">XAUUSD</option>
+    </select>
+    <select id="btTf">
+      <option value="15m">15m</option>
+      <option value="1h" selected>1h</option>
+      <option value="4h">4h</option>
+      <option value="1d">1d</option>
+    </select>
+    <input id="btBalance" type="number" value="1000" style="width:90px" placeholder="Start balance"/>
+    <input id="btRisk" type="number" value="1" style="width:60px" placeholder="Risk %"/>
+    <button onclick="runBacktest()">Run Real Backtest</button>
+  </div>
+  <div id="btBody" style="margin-top:12px"></div>
+</div>
+
+<script>
+const API = ''; // same-origin: your server
+
+async function safeFetch(url) {
+  try {
+    const res = await fetch(API + url);
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || res.statusText);
+    return { ok: true, data: json };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+}
+
+function fmtMoney(n, ccy) {
+  if (typeof n !== 'number') return '—';
+  return (ccy || '') + ' ' + n.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+
+async function loadAccount() {
+  const badge = document.getElementById('acctBadge');
+  const body = document.getElementById('acctBody');
+  const r = await safeFetch('/api/account');
+  if (!r.ok) {
+    badge.textContent = 'ERROR'; badge.className = 'badge err';
+    body.innerHTML = `<div class="row">Could not load live account: ${r.error}</div>`;
+    return;
+  }
+  badge.textContent = 'LIVE'; badge.className = 'badge live';
+  const a = r.data.data;
+  body.innerHTML = `
+    <div class="row"><span>Broker</span><span class="stat">${a.broker || '—'}</span></div>
+    <div class="row"><span>Account</span><span class="stat">${a.login || '—'} (${a.server || '—'})</span></div>
+    <div class="row"><span>Balance</span><span class="stat">${fmtMoney(a.balance, a.currency)}</span></div>
+    <div class="row"><span>Equity</span><span class="stat">${fmtMoney(a.equity, a.currency)}</span></div>
+    <div class="row"><span>Margin</span><span class="stat">${fmtMoney(a.margin, a.currency)}</span></div>
+    <div class="row"><span>Free Margin</span><span class="stat">${fmtMoney(a.freeMargin, a.currency)}</span></div>
+  `;
+}
+
+async function loadPositions() {
+  const badge = document.getElementById('posBadge');
+  const body = document.getElementById('posBody');
+  const r = await safeFetch('/api/positions');
+  if (!r.ok) {
+    badge.textContent = 'ERROR'; badge.className = 'badge err';
+    body.innerHTML = `<div class="row">${r.error}</div>`;
+    return;
+  }
+  badge.textContent = 'LIVE'; badge.className = 'badge live';
+  const positions = r.data.data || [];
+  if (!positions.length) {
+    body.innerHTML = '<div class="row">No open positions.</div>';
+    return;
+  }
+  body.innerHTML = `<table><tr><th>Symbol</th><th>Side</th><th>Volume</th><th>Open Price</th><th>P&L</th></tr>` +
+    positions.map(p => `<tr>
+      <td>${p.symbol}</td><td>${p.type}</td><td>${p.volume}</td>
+      <td>${p.openPrice}</td>
+      <td class="${p.profit >= 0 ? 'pos' : 'neg'}">${fmtMoney(p.profit)}</td>
+    </tr>`).join('') + `</table>`;
+}
+
+async function loadHistory() {
+  const badge = document.getElementById('histBadge');
+  const body = document.getElementById('histBody');
+  const r = await safeFetch('/api/history?days=90');
+  if (!r.ok) {
+    badge.textContent = 'ERROR'; badge.className = 'badge err';
+    body.innerHTML = `<div class="row">${r.error}</div>`;
+    return;
+  }
+  badge.textContent = 'LIVE'; badge.className = 'badge live';
+  const deals = (r.data.data || []).filter(d => d.type === 'DEAL_TYPE_BUY' || d.type === 'DEAL_TYPE_SELL').slice(-25).reverse();
+  if (!deals.length) {
+    body.innerHTML = '<div class="row">No closed trades in the last 90 days.</div>';
+    return;
+  }
+  body.innerHTML = `<table><tr><th>Time</th><th>Symbol</th><th>Side</th><th>Volume</th><th>Profit</th></tr>` +
+    deals.map(d => `<tr>
+      <td>${new Date(d.time).toLocaleDateString()}</td>
+      <td>${d.symbol || '—'}</td><td>${d.type?.replace('DEAL_TYPE_','')}</td>
+      <td>${d.volume ?? '—'}</td>
+      <td class="${(d.profit||0) >= 0 ? 'pos':'neg'}">${fmtMoney(d.profit||0)}</td>
+    </tr>`).join('') + `</table>`;
+}
+
+async function runBacktest() {
+  const sym = document.getElementById('btSymbol').value;
+  const tf = document.getElementById('btTf').value;
+  const bal = document.getElementById('btBalance').value;
+  const risk = document.getElementById('btRisk').value;
+  const body = document.getElementById('btBody');
+  body.innerHTML = '<div class="loading">Fetching real historical candles and running backtest…</div>';
+
+  const r = await safeFetch(`/api/backtest/${sym}/${tf}?balance=${bal}&riskPct=${risk}&candles=2000`);
+  if (!r.ok) {
+    body.innerHTML = `<div class="row" style="color:var(--red)">Backtest failed: ${r.error}</div>`;
+    return;
+  }
+  const { result, dataRange } = r.data;
+  const retClass = result.totalReturnPct >= 0 ? 'pos' : 'neg';
+  body.innerHTML = `
+    <div class="disclosure">Data range: ${new Date(dataRange.from).toLocaleDateString()} → ${new Date(dataRange.to).toLocaleDateString()} (${result.candleCount} real candles)</div>
+    <div class="row"><span>Total return</span><span class="stat ${retClass}">${result.totalReturnPct}%</span></div>
+    <div class="row"><span>Ending balance</span><span class="stat">${fmtMoney(result.endingBalance)}</span></div>
+    <div class="row"><span>Total trades</span><span class="stat">${result.totalTrades}</span></div>
+    <div class="row"><span>Win rate</span><span class="stat">${result.winRatePct}%</span></div>
+    <div class="row"><span>Profit factor</span><span class="stat">${result.profitFactor ?? '—'}</span></div>
+    <div class="row"><span>Max drawdown</span><span class="stat neg">${result.maxDrawdownPct}%</span></div>
+    <div class="disclosure">⚠️ Past performance on historical data does not guarantee future results. This is one fixed strategy on one symbol/timeframe — not investment advice.</div>
+  `;
+}
+
+loadAccount();
+loadPositions();
+loadHistory();
+setInterval(loadAccount, 15000);
+setInterval(loadPositions, 10000);
+</script>
+</body>
+</html>
