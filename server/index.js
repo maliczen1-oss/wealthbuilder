@@ -254,10 +254,14 @@ resolveClientApiUrl()
     });
   })
   .catch(err => {
-    console.error(
-      '[FATAL] Could not resolve MetaApi account:',
-      err.message
-    );
+  console.error('[FATAL] Could not resolve MetaApi account');
+  console.error('MESSAGE:', err.message);
 
-    process.exit(1);
-  });
+  if (err.cause) {
+    console.error('CAUSE:', err.cause);
+  }
+
+  console.error('STACK:', err.stack);
+
+  process.exit(1);
+});
