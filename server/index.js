@@ -97,7 +97,48 @@ app.get('/api/history', async (req, res) => {
     });
   }
 });
+app.get('/api/performance', async (req, res) => {
+  try {
+    const startTime = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+    const endTime = new Date();
 
+    const deals = await connection.getDealsByTimeRange(startTime, endTime);
+
+    const trades = deals.filter(d =>
+      d.type === 'DEAL_TYPE_BUY' || d.type === 'DEAL_TYPE_SELL'
+    );
+
+    const winningTrades = trades.filter(t => t.profit > 0);
+    const losingTrades = trades.filter(t => t.profit < 0);
+
+    const grossProfit = winningTrades.reduce((a, b) => a + b.profit, 0);
+    const grossLoss = Math.abs(
+      losingTrades.reduce((a, b) => a + b.profit, 0)
+    );
+
+    const netProfit = grossProfit - grossLoss;
+
+    res.json({
+      totalTrades: trades.length,
+      winningTrades: winningTrades.length,
+      losingTrades: losingTrades.length,
+      winRate:
+        trades.length > 0
+          ? ((winningTrades.length / trades.length) * 100).toFixed(2)
+          : 0,
+      grossProfit,
+      grossLoss,
+      netProfit,
+      profitFactor:
+        grossLoss > 0 ? (grossProfit / grossLoss).toFixed(2) : "∞"
+    });
+
+  } catch (err) {
+    res.status(500).json({
+      error: err.message
+    });
+  }
+});
 initialize()
   .then(() => {
     app.listen(PORT, () => {
