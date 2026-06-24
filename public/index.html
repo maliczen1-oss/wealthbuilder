@@ -2,135 +2,123 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WealthBuilder Dashboard</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+
+<title>WealthBuilder</title>
 
 <style>
 body{
-  font-family:Arial,sans-serif;
-  background:#111827;
-  color:#ffffff;
-  margin:0;
-  padding:20px;
+background:#0f172a;
+color:white;
+font-family:Arial,sans-serif;
+margin:0;
+padding:20px;
+}
+
+h1{
+text-align:center;
+}
+
+.grid{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+gap:20px;
+margin-top:25px;
 }
 
 .card{
-  background:#1f2937;
-  padding:20px;
-  border-radius:10px;
-  margin-bottom:20px;
+background:#1e293b;
+padding:20px;
+border-radius:12px;
+box-shadow:0 0 10px rgba(0,0,0,.3);
 }
 
-h1,h2{
-  margin-top:0;
+.value{
+font-size:28px;
+margin-top:10px;
+font-weight:bold;
+color:#4ade80;
 }
 
-button{
-  padding:10px 15px;
-  border:none;
-  border-radius:6px;
-  cursor:pointer;
-  background:#2563eb;
-  color:white;
-}
-
-button:hover{
-  opacity:0.9;
-}
-
-pre{
-  overflow:auto;
-  white-space:pre-wrap;
-  word-wrap:break-word;
+small{
+color:#94a3b8;
 }
 </style>
+
 </head>
 
 <body>
 
-<h1>WealthBuilder</h1>
+<h1>WealthBuilder Dashboard</h1>
+
+<div class="grid">
 
 <div class="card">
-  <h2>Health Check</h2>
-  <button onclick="loadHealth()">Check Server</button>
-  <pre id="health"></pre>
+<small>Status</small>
+<div class="value" id="status">Loading...</div>
 </div>
 
 <div class="card">
-  <h2>Account Information</h2>
-  <button onclick="loadAccount()">Load Account</button>
-  <pre id="account"></pre>
+<small>Account Name</small>
+<div class="value" id="name">-</div>
 </div>
 
 <div class="card">
-  <h2>Open Positions</h2>
-  <button onclick="loadPositions()">Load Positions</button>
-  <pre id="positions"></pre>
+<small>Broker</small>
+<div class="value" id="broker">-</div>
 </div>
 
 <div class="card">
-  <h2>Trade History</h2>
-  <button onclick="loadHistory()">Load History</button>
-  <pre id="history"></pre>
+<small>Balance</small>
+<div class="value" id="balance">-</div>
+</div>
+
+<div class="card">
+<small>Equity</small>
+<div class="value" id="equity">-</div>
+</div>
+
+<div class="card">
+<small>Free Margin</small>
+<div class="value" id="margin">-</div>
+</div>
+
+<div class="card">
+<small>Open Positions</small>
+<div class="value" id="positions">0</div>
+</div>
+
 </div>
 
 <script>
 
-async function api(url){
-  const response = await fetch(url);
+async function load(){
 
-  if(!response.ok){
-    throw new Error(await response.text());
-  }
+const health=await fetch("/api/health").then(r=>r.json());
 
-  return response.json();
+const account=await fetch("/api/account").then(r=>r.json());
+
+const positions=await fetch("/api/positions").then(r=>r.json());
+
+document.getElementById("status").innerHTML="🟢 Online";
+
+document.getElementById("name").innerHTML=account.name;
+
+document.getElementById("broker").innerHTML=account.broker;
+
+document.getElementById("balance").innerHTML=account.balance;
+
+document.getElementById("equity").innerHTML=account.equity;
+
+document.getElementById("margin").innerHTML=account.freeMargin;
+
+document.getElementById("positions").innerHTML=positions.length;
+
 }
 
-async function loadHealth(){
-  try{
-    const data = await api('/api/health');
-    document.getElementById('health').textContent =
-      JSON.stringify(data,null,2);
-  }catch(err){
-    document.getElementById('health').textContent =
-      err.message;
-  }
-}
+load();
 
-async function loadAccount(){
-  try{
-    const data = await api('/api/account');
-    document.getElementById('account').textContent =
-      JSON.stringify(data,null,2);
-  }catch(err){
-    document.getElementById('account').textContent =
-      err.message;
-  }
-}
-
-async function loadPositions(){
-  try{
-    const data = await api('/api/positions');
-    document.getElementById('positions').textContent =
-      JSON.stringify(data,null,2);
-  }catch(err){
-    document.getElementById('positions').textContent =
-      err.message;
-  }
-}
-
-async function loadHistory(){
-  try{
-    const data = await api('/api/history');
-    document.getElementById('history').textContent =
-      JSON.stringify(data,null,2);
-  }catch(err){
-    document.getElementById('history').textContent =
-      err.message;
-  }
-}
-
-loadHealth();
+setInterval(load,5000);
 
 </script>
 
