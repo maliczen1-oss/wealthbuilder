@@ -1,96 +1,69 @@
 require('dotenv').config();
+
 const express = require('express');
 const path = require('path');
-const { runStrategy } = require('./backtest');
+const MetaApi = require('metaapi.cloud-sdk').default;
 
 const app = express();
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
-const METAAPI_TOKEN = process.env.METAAPI_TOKEN;
-const ACCOUNT_ID = process.env.METAAPI_ACCOUNT_ID;
 const PORT = process.env.PORT || 3000;
+const TOKEN = process.env.METAAPI_TOKEN;
+const ACCOUNT_ID = process.env.METAAPI_ACCOUNT_ID;
 
-console.log(
-  'METAAPI_TOKEN:',
-  METAAPI_TOKEN ? 'SET' : 'MISSING'
-);
-
-console.log(
-  'METAAPI_ACCOUNT_ID:',
-  ACCOUNT_ID ? 'SET' : 'MISSING'
-);
-
-
-const METAAPI_PROVISIONING_URL =
-  'https://mt-provisioning-api-v1.metaapi.cloud';
-
-let CLIENT_API_URL = null;
-
-if (!METAAPI_TOKEN || !ACCOUNT_ID) {
-  console.error(
-    '[FATAL] Missing METAAPI_TOKEN or METAAPI_ACCOUNT_ID'
-  );
+if (!TOKEN || !ACCOUNT_ID) {
+  console.error('Missing MetaApi credentials');
   process.exit(1);
 }
 
-async function metaApiFetch(url, opts = {}) {
-  const res = await fetch(url, {
-    ...opts,
-    headers: {
-      'auth-token': METAAPI_TOKEN,
-      'Content-Type': 'application/json',
-      ...(opts.headers || {})
-    }
-  });
+let account = null;
+let connection = null;
 
-  if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    throw new Error(
-      `MetaApi ${res.status} ${res.statusText}: ${text}`
-    );
+async function initialize() {
+  const api = new MetaApi(TOKEN);
+
+  account = await api.metatraderAccountApi.getAccount(
+    ACCOUNT_ID
+  );
+
+  if (
+    account.state !== 'DEPLOYED'
+  ) {
+    await account.deploy();
   }
 
-  return res.json();
-}
+  await account.waitConnected();
 
-async function resolveClientApiUrl() {
-  const account = await metaApiFetch(
-    `${METAAPI_PROVISIONING_URL}/users/current/accounts/${ACCOUNT_ID}`
-  );
+  connection =
+    account.getRPCConnection();
 
-  const region = account.region || 'new-york';
-
-  CLIENT_API_URL =
-    `https://mt-client-api-v1.${region}.agiliumtrade.ai`;
+  await connection.connect();
+  await connection.waitSynchronized();
 
   console.log(
-    `[OK] Account resolved. Region: ${region}`
+    'Connected to MT5:',
+    account.name
   );
-
-  return account;
 }
 
-app.get('/api/health', (req, res) => {
+app.get('/api/health', async (req, res) => {
   res.json({
     ok: true,
-    region: CLIENT_API_URL ? 'resolved' : 'unresolved'
+    broker: account?.broker,
+    name: account?.name
   });
 });
 
 app.get('/api/account', async (req, res) => {
   try {
-    const data = await metaApiFetch(
-      `${CLIENT_API_URL}/users/current/accounts/${ACCOUNT_ID}/account-information`
-    );
+    const info =
+      await connection.getAccountInformation();
 
-    res.json({
-      source: 'live',
-      data
-    });
+    res.json(info);
   } catch (err) {
-    res.status(502).json({
+    res.status(500).json({
       error: err.message
     });
   }
@@ -98,181 +71,26 @@ app.get('/api/account', async (req, res) => {
 
 app.get('/api/positions', async (req, res) => {
   try {
-    const data = await metaApiFetch(
-      `${CLIENT_API_URL}/users/current/accounts/${ACCOUNT_ID}/positions`
-    );
+    const positions =
+      await connection.getPositions();
 
-    res.json({
-      source: 'live',
-      data
-    });
+    res.json(positions);
   } catch (err) {
-    res.status(502).json({
+    res.status(500).json({
       error: err.message
     });
   }
 });
 
-app.get('/api/orders', async (req, res) => {
-  try {
-    const data = await metaApiFetch(
-      `${CLIENT_API_URL}/users/current/accounts/${ACCOUNT_ID}/orders`
-    );
-
-    res.json({
-      source: 'live',
-      data
-    });
-  } catch (err) {
-    res.status(502).json({
-      error: err.message
-    });
-  }
-});
-
-app.get('/api/history', async (req, res) => {
-  try {
-    const days = parseInt(req.query.days || '90', 10);
-
-    const endTime = new Date().toISOString();
-    const startTime = new Date(
-      Date.now() - days * 86400000
-    ).toISOString();
-
-    const data = await metaApiFetch(
-      `${CLIENT_API_URL}/users/current/accounts/${ACCOUNT_ID}/history-deals/time/${encodeURIComponent(startTime)}/${encodeURIComponent(endTime)}`
-    );
-
-    res.json({
-      source: 'live',
-      data
-    });
-  } catch (err) {
-    res.status(502).json({
-      error: err.message
-    });
-  }
-});
-
-app.get('/api/candles/:symbol/:timeframe', async (req, res) => {
-  try {
-    const { symbol, timeframe } = req.params;
-
-    const limit = parseInt(
-      req.query.limit || '1000',
-      10
-    );
-
-    const startTime =
-      req.query.startTime ||
-      new Date().toISOString();
-
-    const data = await metaApiFetch(
-      `${CLIENT_API_URL}/users/current/accounts/${ACCOUNT_ID}/historical-market-data/symbols/${symbol}/timeframes/${timeframe}/candles?startTime=${encodeURIComponent(startTime)}&limit=${limit}`
-    );
-
-    res.json({
-      source: 'live',
-      data
-    });
-  } catch (err) {
-    res.status(502).json({
-      error: err.message
-    });
-  }
-});
-
-app.get(
-  '/api/backtest/:symbol/:timeframe',
-  async (req, res) => {
-    try {
-      const { symbol, timeframe } = req.params;
-
-      const candleLimit = Math.min(
-        parseInt(req.query.candles || '2000', 10),
-        5000
-      );
-
-      const startingBalance = parseFloat(
-        req.query.balance || '1000'
-      );
-
-      const riskPct = parseFloat(
-        req.query.riskPct || '1'
-      );
-
-      const raw = await metaApiFetch(
-        `${CLIENT_API_URL}/users/current/accounts/${ACCOUNT_ID}/historical-market-data/symbols/${symbol}/timeframes/${timeframe}/candles?startTime=${encodeURIComponent(new Date().toISOString())}&limit=${candleLimit}`
-      );
-
-      if (!Array.isArray(raw) || raw.length < 50) {
-        return res.status(422).json({
-          error:
-            'Not enough historical candles returned',
-          candlesReceived: Array.isArray(raw)
-            ? raw.length
-            : 0
-        });
-      }
-
-      const candles = raw
-        .map(c => ({
-          time: c.time || c.brokerTime,
-          open: c.open,
-          high: c.high,
-          low: c.low,
-          close: c.close
-        }))
-        .filter(
-          c =>
-            Number.isFinite(c.open) &&
-            Number.isFinite(c.close)
-        )
-        .sort(
-          (a, b) =>
-            new Date(a.time) - new Date(b.time)
-        );
-
-      const result = runStrategy(candles, {
-        startingBalance,
-        riskPctPerTrade: riskPct
-      });
-
-      res.json({
-        source: 'live-historical',
-        symbol,
-        timeframe,
-        dataRange: {
-          from: candles[0]?.time,
-          to: candles[candles.length - 1]?.time
-        },
-        result
-      });
-    } catch (err) {
-      res.status(502).json({
-        error: err.message
-      });
-    }
-  }
-);
-
-resolveClientApiUrl()
+initialize()
   .then(() => {
     app.listen(PORT, () => {
       console.log(
-        `WealthBuilder running on port ${PORT}`
+        `WealthBuilder running on ${PORT}`
       );
     });
   })
   .catch(err => {
-  console.error('[FATAL] Could not resolve MetaApi account');
-  console.error('MESSAGE:', err.message);
-
-  if (err.cause) {
-    console.error('CAUSE:', err.cause);
-  }
-
-  console.error('STACK:', err.stack);
-
-  process.exit(1);
-});
+    console.error(err);
+    process.exit(1);
+  });
