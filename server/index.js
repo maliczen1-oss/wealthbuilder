@@ -28,31 +28,25 @@ async function initialize() {
     ACCOUNT_ID
   );
 
-  if (
-    account.state !== 'DEPLOYED'
-  ) {
+  if (account.state !== 'DEPLOYED') {
     await account.deploy();
   }
 
   await account.waitConnected();
 
-  connection =
-    account.getRPCConnection();
+  connection = account.getRPCConnection();
 
   await connection.connect();
   await connection.waitSynchronized();
 
-  console.log(
-    'Connected to MT5:',
-    account.name
-  );
+  console.log('Connected to MT5:', account.name);
 }
 
 app.get('/api/health', async (req, res) => {
   res.json({
     ok: true,
-    broker: account?.broker,
-    name: account?.name
+    name: account?.name,
+    broker: account?.broker
   });
 });
 
@@ -75,6 +69,28 @@ app.get('/api/positions', async (req, res) => {
       await connection.getPositions();
 
     res.json(positions);
+  } catch (err) {
+    res.status(500).json({
+      error: err.message
+    });
+  }
+});
+
+app.get('/api/history', async (req, res) => {
+  try {
+    const startTime = new Date(
+      Date.now() - 90 * 24 * 60 * 60 * 1000
+    );
+
+    const endTime = new Date();
+
+    const deals =
+      await connection.getDealsByTimeRange(
+        startTime,
+        endTime
+      );
+
+    res.json(deals);
   } catch (err) {
     res.status(500).json({
       error: err.message
