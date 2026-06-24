@@ -3,9 +3,17 @@ app.get('/api/performance', async (req, res) => {
     const startTime = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
     const endTime = new Date();
 
-    const deals = await connection.getDealsByTimeRange(startTime, endTime);
+    const deals = await connection.getDealsByTimeRange(
+      startTime,
+      endTime
+    );
 
-    res.json(deals);
+    res.json({
+      type: typeof deals,
+      isArray: Array.isArray(deals),
+      keys: Object.keys(deals),
+      data: deals
+    });
 
   } catch (err) {
     res.status(500).json({
