@@ -1,153 +1,137 @@
-require('dotenv').config();
+require("dotenv").config();
 
-const express = require('express');
-const path = require('path');
-const MetaApi = require('metaapi.cloud-sdk').default;
+const express = require("express");
+const path = require("path");
+const MetaApi = require("metaapi.cloud-sdk").default;
 
 const app = express();
 
 app.use(express.json());
-app.use(express.static(path.join(__dirname, '..', 'public')));
+app.use(express.static(path.join(__dirname, "..", "public")));
 
 const PORT = process.env.PORT || 3000;
 const TOKEN = process.env.METAAPI_TOKEN;
 const ACCOUNT_ID = process.env.METAAPI_ACCOUNT_ID;
 
 if (!TOKEN || !ACCOUNT_ID) {
-  console.error('Missing MetaApi credentials');
-  process.exit(1);
+    console.error("Missing MetaApi credentials.");
+    process.exit(1);
 }
 
 let account = null;
 let connection = null;
 
 async function initialize() {
-  const api = new MetaApi(TOKEN);
 
-  account = await api.metatraderAccountApi.getAccount(
-    ACCOUNT_ID
-  );
+    const api = new MetaApi(TOKEN);
 
-  if (account.state !== 'DEPLOYED') {
-    await account.deploy();
-  }
+    account = await api.metatraderAccountApi.getAccount(
+        ACCOUNT_ID
+    );
 
-  await account.waitConnected();
+    if (account.state !== "DEPLOYED") {
+        await account.deploy();
+    }
 
-  connection = account.getRPCConnection();
+    await account.waitConnected();
 
-  await connection.connect();
-  await connection.waitSynchronized();
+    connection = account.getRPCConnection();
 
-  console.log('Connected to MT5:', account.name);
+    await connection.connect();
+
+    await connection.waitSynchronized();
+
+    console.log("Connected to:", account.name);
 }
 
-app.get('/api/health', async (req, res) => {
-  res.json({
-    ok: true,
-    name: account?.name,
-    broker: account?.broker
-  });
+// Makes the connection available to every route
+app.use((req, res, next) => {
+    req.connection = connection;
+    req.account = account;
+    next();
 });
 
-app.get('/api/account', async (req, res) => {
-  try {
-    const info =
-      await connection.getAccountInformation();
+// Route modules
+app.use("/api/history", require("./routes/history"));
+app.use("/api/performance", require("./routes/performance"));
+app.use("/api/analytics", require("./routes/analytics"));
 
-    res.json(info);
-  } catch (err) {
-    res.status(500).json({
-      error: err.message
-    });
-  }
-});
-
-app.get('/api/positions', async (req, res) => {
-  try {
-    const positions =
-      await connection.getPositions();
-
-    res.json(positions);
-  } catch (err) {
-    res.status(500).json({
-      error: err.message
-    });
-  }
-});
-
-app.get('/api/history', async (req, res) => {
-  try {
-    const startTime = new Date(
-      Date.now() - 90 * 24 * 60 * 60 * 1000
-    );
-
-    const endTime = new Date();
-
-    const deals =
-      await connection.getDealsByTimeRange(
-        startTime,
-        endTime
-      );
-
-    res.json(deals);
-  } catch (err) {
-    res.status(500).json({
-      error: err.message
-    });
-  }
-});
-app.get('/api/performance', async (req, res) => {
-  try {
-    const startTime = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
-    const endTime = new Date();
-
-    const deals = await connection.getDealsByTimeRange(startTime, endTime);
-
-    const trades = deals.filter(d =>
-      d.type === 'DEAL_TYPE_BUY' || d.type === 'DEAL_TYPE_SELL'
-    );
-
-    const winningTrades = trades.filter(t => t.profit > 0);
-    const losingTrades = trades.filter(t => t.profit < 0);
-
-    const grossProfit = winningTrades.reduce((a, b) => a + b.profit, 0);
-    const grossLoss = Math.abs(
-      losingTrades.reduce((a, b) => a + b.profit, 0)
-    );
-
-    const netProfit = grossProfit - grossLoss;
+// Existing endpoints
+app.get("/api/health", (req, res) => {
 
     res.json({
-      totalTrades: trades.length,
-      winningTrades: winningTrades.length,
-      losingTrades: losingTrades.length,
-      winRate:
-        trades.length > 0
-          ? ((winningTrades.length / trades.length) * 100).toFixed(2)
-          : 0,
-      grossProfit,
-      grossLoss,
-      netProfit,
-      profitFactor:
-        grossLoss > 0 ? (grossProfit / grossLoss).toFixed(2) : "∞"
+        ok: true,
+        name: account?.name,
+        broker: account?.broker
     });
 
-  } catch (err) {
-    res.status(500).json({
-      error: err.message
-    });
-  }
 });
+
+app.get("/api/account", async (req, res) => {
+
+    try {
+
+        const info =
+            await connection.getAccountInformation();
+
+        res.json(info);
+
+    } catch (err) {
+
+        res.status(500).json({
+            error: err.message
+        });
+
+    }
+
+});
+
+app.get("/api/positions", async (req, res) => {
+
+    try {
+
+        const positions =
+            await connection.getPositions();
+
+        res.json(positions);
+
+    } catch (err) {
+
+        res.status(500).json({
+            error: err.message
+        });
+
+    }
+
+});
+
+// Dashboard
+app.get("/", (req, res) => {
+
+    res.sendFile(
+        path.join(__dirname, "..", "public", "index.html")
+    );
+
+});
+
 initialize()
-  .then(() => {
+
+.then(() => {
+
     app.listen(PORT, () => {
-      console.log(
-        `WealthBuilder running on ${PORT}`
-      );
+
+        console.log(
+            `WealthBuilder running on ${PORT}`
+        );
+
     });
-  })
-  .catch(err => {
+
+})
+
+.catch(err => {
+
     console.error(err);
+
     process.exit(1);
-  });
+
+});
