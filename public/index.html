@@ -1,126 +1,281 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
 
-<title>WealthBuilder</title>
+<meta name="viewport"
+content="width=device-width, initial-scale=1.0">
 
-<style>
-body{
-background:#0f172a;
-color:white;
-font-family:Arial,sans-serif;
-margin:0;
-padding:20px;
-}
+<title>
+WealthBuilder OS | Mission Control
+</title>
 
-h1{
-text-align:center;
-}
+<link rel="stylesheet"
+href="css/style.css">
 
-.grid{
-display:grid;
-grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
-gap:20px;
-margin-top:25px;
-}
+<link rel="preconnect"
+href="https://fonts.googleapis.com">
 
-.card{
-background:#1e293b;
-padding:20px;
-border-radius:12px;
-box-shadow:0 0 10px rgba(0,0,0,.3);
-}
+<link rel="preconnect"
+href="https://fonts.gstatic.com"
+crossorigin>
 
-.value{
-font-size:28px;
-margin-top:10px;
-font-weight:bold;
-color:#4ade80;
-}
-
-small{
-color:#94a3b8;
-}
-</style>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+rel="stylesheet">
 
 </head>
 
 <body>
 
-<h1>WealthBuilder Dashboard</h1>
+<div id="app">
 
-<div class="grid">
+    <!-- ===========================
+         HEADER
+    ============================ -->
 
-<div class="card">
-<small>Status</small>
-<div class="value" id="status">Loading...</div>
-</div>
+    <header class="topbar">
 
-<div class="card">
-<small>Account Name</small>
-<div class="value" id="name">-</div>
-</div>
+        <div class="logo-area">
 
-<div class="card">
-<small>Broker</small>
-<div class="value" id="broker">-</div>
-</div>
+            <h1>
 
-<div class="card">
-<small>Balance</small>
-<div class="value" id="balance">-</div>
-</div>
+                WealthBuilder OS
 
-<div class="card">
-<small>Equity</small>
-<div class="value" id="equity">-</div>
-</div>
+            </h1>
 
-<div class="card">
-<small>Free Margin</small>
-<div class="value" id="margin">-</div>
-</div>
+            <span>
 
-<div class="card">
-<small>Open Positions</small>
-<div class="value" id="positions">0</div>
-</div>
+                Powered by Jarvis Intelligence
 
-</div>
+            </span>
 
-<script>
+        </div>
 
-async function load(){
+        <div class="status-area">
 
-const health=await fetch("/api/health").then(r=>r.json());
+            <div class="status-pill">
 
-const account=await fetch("/api/account").then(r=>r.json());
+                <span class="dot online"></span>
 
-const positions=await fetch("/api/positions").then(r=>r.json());
+                Connected
 
-document.getElementById("status").innerHTML="🟢 Online";
+            </div>
 
-document.getElementById("name").innerHTML=account.name;
+            <div id="brokerName"
+            class="status-pill">
 
-document.getElementById("broker").innerHTML=account.broker;
+                Broker
 
-document.getElementById("balance").innerHTML=account.balance;
+            </div>
 
-document.getElementById("equity").innerHTML=account.equity;
+            <div id="serverTime"
+            class="status-pill">
 
-document.getElementById("margin").innerHTML=account.freeMargin;
+                --:--
 
-document.getElementById("positions").innerHTML=positions.length;
+            </div>
 
-}
+        </div>
 
-load();
+    </header>
 
-setInterval(load,5000);
+    <!-- ===========================
+         MAIN LAYOUT
+    ============================ -->
 
-</script>
+    <div class="layout">
 
-</body>
-</html>
+        <!-- SIDEBAR -->
+
+        <aside class="sidebar">
+
+            <nav>
+
+                <button class="nav-item active">
+
+                    Mission Control
+
+                </button>
+
+                <button class="nav-item">
+
+                    Trading
+
+                </button>
+
+                <button class="nav-item">
+
+                    Automation
+
+                </button>
+
+                <button class="nav-item">
+
+                    Journal
+
+                </button>
+
+                <button class="nav-item">
+
+                    DNA
+
+                </button>
+
+                <button class="nav-item">
+
+                    Psychology
+
+                </button>
+
+                <button class="nav-item">
+
+                    Academy
+
+                </button>
+
+                <button class="nav-item">
+
+                    Analytics
+
+                </button>
+
+                <button class="nav-item">
+
+                    Settings
+
+                </button>
+
+            </nav>
+
+        </aside>
+
+        <!-- MAIN -->
+
+        <main class="dashboard">
+
+            <!-- JARVIS -->
+
+            <section
+            class="card hero-card">
+
+                <div>
+
+                    <h2>
+
+                        Good Morning, Founder.
+
+                    </h2>
+
+                    <p>
+
+                        Welcome to Mission Control.
+
+                    </p>
+
+                </div>
+
+                <div
+                id="morningBrief">
+
+                    Loading Morning Brief...
+
+                </div>
+
+            </section>
+
+            <!-- SCORE ROW -->
+
+            <section
+            class="grid two">
+
+                <div class="card">
+
+                    <h3>
+
+                        WealthBuilder Score
+
+                    </h3>
+
+                    <div
+                    id="wealthScore"
+                    class="big-number">
+
+                        --
+
+                    </div>
+
+                    <p>
+
+                        Discipline over emotion.
+
+                    </p>
+
+                </div>
+
+                <div class="card">
+
+                    <h3>
+
+                        Readiness
+
+                    </h3>
+
+                    <div
+                    id="readinessScore"
+                    class="big-number">
+
+                        --
+
+                    </div>
+
+                    <p
+                    id="readinessStatus">
+
+                        Loading...
+
+                    </p>
+
+                </div>
+
+            </section>
+
+            <!-- ACCOUNT -->
+
+            <section
+            class="grid two">
+
+                <div class="card">
+
+                    <h3>
+
+                        Account Health
+
+                    </h3>
+
+                    <div id="accountHealth">
+
+                        Loading...
+
+                    </div>
+
+                </div>
+
+                <div class="card">
+
+                    <h3>
+
+                        Automation
+
+                    </h3>
+
+                    <div id="automationStatus">
+
+                        Loading...
+
+                    </div>
+
+                </div>
+
+            </section>
