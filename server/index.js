@@ -9,6 +9,11 @@ const historyRoute = require("./routes/history");
 const performanceRoute = require("./routes/performance");
 const analyticsRoute = require("./routes/analytics");
 const morningBriefRoute = require("./routes/morningBrief");
+const dnaRoute = require("./routes/dna");
+const psychologyRoute = require("./routes/psychology");
+const automationRoute = require("./routes/automation");
+const readinessRoute = require("./routes/readiness");
+const systemRoute = require("./routes/system");
 
 const app = express();
 
@@ -27,12 +32,12 @@ if (!TOKEN || !ACCOUNT_ID) {
 }
 
 /*
-|--------------------------------------------------------------------------
-| MetaApi Middleware
-|--------------------------------------------------------------------------
+==========================================================
+MetaApi Middleware
+==========================================================
 */
 
-app.use(async (req, res, next) => {
+app.use((req, res, next) => {
 
     req.connection = metaapi.getConnection();
     req.account = metaapi.getAccount();
@@ -42,9 +47,9 @@ app.use(async (req, res, next) => {
 });
 
 /*
-|--------------------------------------------------------------------------
-| API Routes
-|--------------------------------------------------------------------------
+==========================================================
+API Routes
+==========================================================
 */
 
 app.use("/api/history", historyRoute);
@@ -55,10 +60,20 @@ app.use("/api/analytics", analyticsRoute);
 
 app.use("/api/morning-brief", morningBriefRoute);
 
+app.use("/api/dna", dnaRoute);
+
+app.use("/api/psychology", psychologyRoute);
+
+app.use("/api/automation", automationRoute);
+
+app.use("/api/readiness", readinessRoute);
+
+app.use("/api/system", systemRoute);
+
 /*
-|--------------------------------------------------------------------------
-| Core API
-|--------------------------------------------------------------------------
+==========================================================
+Core API
+==========================================================
 */
 
 app.get("/api/health", (req, res) => {
@@ -118,9 +133,9 @@ app.get("/api/positions", async (req, res) => {
 });
 
 /*
-|--------------------------------------------------------------------------
-| Frontend
-|--------------------------------------------------------------------------
+==========================================================
+Frontend
+==========================================================
 */
 
 app.get("/", (req, res) => {
@@ -128,10 +143,15 @@ app.get("/", (req, res) => {
     res.sendFile(
 
         path.join(
+
             __dirname,
+
             "..",
+
             "public",
+
             "index.html"
+
         )
 
     );
@@ -139,20 +159,23 @@ app.get("/", (req, res) => {
 });
 
 /*
-|--------------------------------------------------------------------------
-| Startup
-|--------------------------------------------------------------------------
+==========================================================
+Startup
+==========================================================
 */
 
 async function start() {
 
     try {
 
-        console.log("Initializing WealthBuilder...");
+        console.log("Initializing WealthBuilder OS...");
 
         await metaapi.initialize(
+
             TOKEN,
+
             ACCOUNT_ID
+
         );
 
         console.log("MetaApi Connected");
@@ -161,11 +184,11 @@ async function start() {
 
             console.log("");
             console.log("======================================");
-            console.log(" WealthBuilder OS");
-            console.log(" Powered by Jarvis Intelligence");
+            console.log("WealthBuilder OS");
+            console.log("Powered by Jarvis Intelligence");
             console.log("======================================");
-            console.log(` Server Running : http://localhost:${PORT}`);
-            console.log(` Environment    : ${process.env.NODE_ENV || "development"}`);
+            console.log(`Server Running : http://localhost:${PORT}`);
+            console.log(`Environment    : ${process.env.NODE_ENV || "development"}`);
             console.log("======================================");
             console.log("");
 
@@ -173,9 +196,8 @@ async function start() {
 
     } catch (err) {
 
-        console.error("Failed to start WealthBuilder");
+        console.error("Startup Failed");
         console.error(err);
-
         process.exit(1);
 
     }
