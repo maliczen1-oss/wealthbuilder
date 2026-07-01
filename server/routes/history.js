@@ -1,47 +1,35 @@
-const express = require('express');
+const express = require("express");
 
 const router = express.Router();
 
-module.exports = function(connection) {
-
-  router.get('/', async (req, res) => {
+router.get("/", async (req, res) => {
 
     try {
 
-      const startTime = new Date(
-        Date.now() - 90 * 24 * 60 * 60 * 1000
-      );
+        const connection = req.connection;
 
-      const endTime = new Date();
-
-      const result =
-        await connection.getDealsByTimeRange(
-          startTime,
-          endTime
+        const startTime = new Date(
+            Date.now() - 90 * 24 * 60 * 60 * 1000
         );
 
-      const deals =
-        Array.isArray(result)
-          ? result
-          : result.deals ||
-            result.items ||
-            result.history ||
-            [];
+        const endTime = new Date();
 
-      res.json(deals);
+        const deals =
+            await connection.getDealsByTimeRange(
+                startTime,
+                endTime
+            );
+
+        res.json(deals);
 
     } catch (err) {
 
-      console.error(err);
-
-      res.status(500).json({
-        error: err.message
-      });
+        res.status(500).json({
+            error: err.message
+        });
 
     }
 
-  });
+});
 
-  return router;
-
-};
+module.exports = router;
