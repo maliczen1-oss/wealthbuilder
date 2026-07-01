@@ -5,6 +5,11 @@ const path = require("path");
 
 const metaapi = require("./services/metaapi");
 
+const historyRoute = require("./routes/history");
+const performanceRoute = require("./routes/performance");
+const analyticsRoute = require("./routes/analytics");
+const morningBriefRoute = require("./routes/morningBrief");
+
 const app = express();
 
 app.use(express.json());
@@ -17,28 +22,44 @@ const TOKEN = process.env.METAAPI_TOKEN;
 const ACCOUNT_ID = process.env.METAAPI_ACCOUNT_ID;
 
 if (!TOKEN || !ACCOUNT_ID) {
-
     console.error("Missing MetaApi credentials.");
-
     process.exit(1);
-
 }
+
+/*
+|--------------------------------------------------------------------------
+| MetaApi Middleware
+|--------------------------------------------------------------------------
+*/
 
 app.use(async (req, res, next) => {
 
     req.connection = metaapi.getConnection();
-
     req.account = metaapi.getAccount();
 
     next();
 
 });
 
-app.use("/api/history", require("./routes/history"));
+/*
+|--------------------------------------------------------------------------
+| API Routes
+|--------------------------------------------------------------------------
+*/
 
-app.use("/api/performance", require("./routes/performance"));
+app.use("/api/history", historyRoute);
 
-app.use("/api/analytics", require("./routes/analytics"));
+app.use("/api/performance", performanceRoute);
+
+app.use("/api/analytics", analyticsRoute);
+
+app.use("/api/morning-brief", morningBriefRoute);
+
+/*
+|--------------------------------------------------------------------------
+| Core API
+|--------------------------------------------------------------------------
+*/
 
 app.get("/api/health", (req, res) => {
 
@@ -63,9 +84,7 @@ app.get("/api/account", async (req, res) => {
 
         res.json(info);
 
-    }
-
-    catch (err) {
+    } catch (err) {
 
         res.status(500).json({
 
@@ -86,9 +105,7 @@ app.get("/api/positions", async (req, res) => {
 
         res.json(positions);
 
-    }
-
-    catch (err) {
+    } catch (err) {
 
         res.status(500).json({
 
@@ -100,46 +117,69 @@ app.get("/api/positions", async (req, res) => {
 
 });
 
+/*
+|--------------------------------------------------------------------------
+| Frontend
+|--------------------------------------------------------------------------
+*/
+
 app.get("/", (req, res) => {
 
     res.sendFile(
 
         path.join(
-
             __dirname,
-
             "..",
-
             "public",
-
             "index.html"
-
         )
 
     );
 
 });
 
+/*
+|--------------------------------------------------------------------------
+| Startup
+|--------------------------------------------------------------------------
+*/
+
 async function start() {
 
-    await metaapi.initialize(
+    try {
 
-        TOKEN,
+        console.log("Initializing WealthBuilder...");
 
-        ACCOUNT_ID
-
-    );
-
-    app.listen(PORT, () => {
-
-        console.log(
-
-            `WealthBuilder running on ${PORT}`
-
+        await metaapi.initialize(
+            TOKEN,
+            ACCOUNT_ID
         );
 
-    });
+        console.log("MetaApi Connected");
+
+        app.listen(PORT, () => {
+
+            console.log("");
+            console.log("======================================");
+            console.log(" WealthBuilder OS");
+            console.log(" Powered by Jarvis Intelligence");
+            console.log("======================================");
+            console.log(` Server Running : http://localhost:${PORT}`);
+            console.log(` Environment    : ${process.env.NODE_ENV || "development"}`);
+            console.log("======================================");
+            console.log("");
+
+        });
+
+    } catch (err) {
+
+        console.error("Failed to start WealthBuilder");
+        console.error(err);
+
+        process.exit(1);
+
+    }
 
 }
 
-start().catch(console.error);
+start();
