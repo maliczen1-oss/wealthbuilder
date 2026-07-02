@@ -69,6 +69,11 @@ const API = {
         return this.request("/api/readiness");
 
     },
+ async getGuardian() {
+
+    return this.request("/api/guardian");
+
+},
 
     async getDNA() {
 
