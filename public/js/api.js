@@ -20,9 +20,11 @@ const API = {
             });
 
             if (!response.ok) {
+
                 throw new Error(
                     `API Error ${response.status}`
                 );
+
             }
 
             return await response.json();
@@ -69,11 +71,12 @@ const API = {
         return this.request("/api/readiness");
 
     },
- async getGuardian() {
 
-    return this.request("/api/guardian");
+    async getGuardian() {
 
-},
+        return this.request("/api/guardian");
+
+    },
 
     async getDNA() {
 
@@ -92,23 +95,24 @@ const API = {
         return this.request("/api/automation");
 
     },
-async getSystemInfo() {
 
-    return this.request("/api/system-info");
+    async getSystemInfo() {
 
-}
+        return this.request("/api/system");
 
-async getNotifications() {
+    },
 
-    return this.request("/api/notifications");
+    async getNotifications() {
 
-}
+        return this.request("/api/notifications");
 
-async getReplay() {
+    },
 
-    return this.request("/api/replay");
+    async getReplay() {
 
-} 
+        return this.request("/api/replay");
+
+    },
 
     async updateAutomation(settings) {
 
