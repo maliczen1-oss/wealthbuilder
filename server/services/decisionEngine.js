@@ -1,46 +1,87 @@
-const confidenceEngine = require("./confidenceEngine");
-const marketService = require("./marketService");
-const positionService = require("./positionService");
+/*
+==========================================================
+WealthBuilder OS
+Decision Engine
+Powered by Jarvis Intelligence
+==========================================================
+*/
 
-async function evaluateTrade(setup) {
+class DecisionEngine {
 
-    const confidence =
-        await confidenceEngine.evaluate(setup);
+    evaluate(signals = [], profile = {}) {
 
-    const market =
-        await marketService.getMarketSnapshot(
-            setup.symbol
-        );
+        if (!signals.length) {
 
-    const openPositions =
-        await positionService.getPositionCount();
+            return {
 
-    const approved =
-        confidence.approved &&
-        openPositions < 4;
+                approved: false,
 
-    return {
+                confidence: 0,
 
-        approved,
+                reason:
+                    "No valid trading opportunities found."
 
-        confidence,
+            };
 
-        market,
+        }
 
-        openPositions,
+        const minimumConfidence =
+            profile.minimumConfidence ?? 75;
 
-        recommendation:
+        const rankedSignals =
+            signals.sort(
 
-            approved
-                ? "EXECUTE"
-                : "WAIT"
+                (a, b) =>
 
-    };
+                    b.confidence - a.confidence
+
+            );
+
+        const bestSignal =
+            rankedSignals[0];
+
+        if (
+
+            bestSignal.confidence <
+            minimumConfidence
+
+        ) {
+
+            return {
+
+                approved: false,
+
+                confidence:
+                    bestSignal.confidence,
+
+                reason:
+                    "Signal confidence below required threshold.",
+
+                signal:
+                    bestSignal
+
+            };
+
+        }
+
+        return {
+
+            approved: true,
+
+            confidence:
+                bestSignal.confidence,
+
+            reason:
+                "Signal approved.",
+
+            signal:
+                bestSignal
+
+        };
+
+    }
 
 }
 
-module.exports = {
-
-    evaluateTrade
-
-};
+module.exports =
+new DecisionEngine();
