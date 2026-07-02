@@ -70,9 +70,7 @@ createCards() {
 
         new TradeStoryCard(),
 
-        new DNACard(),
-
-        new PsychologyCard()
+    
 
     ];
 
