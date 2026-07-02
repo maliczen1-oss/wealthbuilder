@@ -2,34 +2,152 @@
 ==========================================================
 WealthBuilder OS
 Execution Pipeline
+Version 2.0
+Powered by Jarvis Intelligence
 ==========================================================
 */
 
-const guardian = require("./guardianService");
-const decisionReport = require("./decisionReportService");
-const replay = require("./replayService");
-const logger = require("./logger");
-const notifications = require("./notificationService");
+const strategyEngine =
+    require("./strategyEngine");
+
+const decisionEngine =
+    require("./decisionEngine");
+
+const validationService =
+    require("./validationService");
+
+const guardianService =
+    require("./guardianService");
+
+const decisionReportService =
+    require("./decisionReportService");
+
+const replayService =
+    require("./replayService");
+
+const learningEngine =
+    require("./learningEngine");
+
+const dnaEngine =
+    require("./dnaEngine");
+
+const logger =
+    require("./logger");
+
+const notifications =
+    require("./notificationService");
 
 class ExecutionPipeline {
 
     execute({
 
+        marketContext,
+
+        marketState,
+
         account,
 
         automation,
 
-        trade
+        profile = {}
 
     }) {
 
-        const guardianReport =
-            guardian.evaluate(
-                account,
-                automation
+        logger.info(
+
+            "Execution Pipeline",
+
+            "Pipeline started."
+
+        );
+
+        /*
+        ======================================
+        Strategy Engine
+        ======================================
+        */
+
+        const signals =
+            strategyEngine.evaluate({
+
+                ...marketContext,
+
+                marketState
+
+            });
+
+        /*
+        ======================================
+        Decision Engine
+        ======================================
+        */
+
+        const decision =
+            decisionEngine.evaluate(
+
+                signals,
+
+                profile
+
             );
 
-        if (guardianReport.status !== "APPROVED") {
+        /*
+        ======================================
+        Validation
+        ======================================
+        */
+
+        const validation =
+            validationService.validateDecision(
+
+                decision
+
+            );
+
+        if (!validation.valid) {
+
+            logger.warning(
+
+                "Validation",
+
+                "Decision validation failed.",
+
+                validation
+
+            );
+
+            return {
+
+                approved: false,
+
+                stage: "Validation",
+
+                validation
+
+            };
+
+        }
+
+        /*
+        ======================================
+        Guardian
+        ======================================
+        */
+
+        const guardian =
+            guardianService.evaluate(
+
+                account,
+
+                automation
+
+            );
+
+        if (
+
+            guardian.status !== "APPROVED"
+
+        ) {
 
             logger.warning(
 
@@ -37,7 +155,7 @@ class ExecutionPipeline {
 
                 "Trade rejected.",
 
-                guardianReport
+                guardian
 
             );
 
@@ -47,7 +165,7 @@ class ExecutionPipeline {
 
                 "Guardian",
 
-                "Trade rejected by Guardian."
+                "Trade rejected."
 
             );
 
@@ -55,36 +173,100 @@ class ExecutionPipeline {
 
                 approved: false,
 
-                guardian: guardianReport
+                stage: "Guardian",
+
+                guardian
 
             };
 
         }
 
+        /*
+        ======================================
+        Decision Report
+        ======================================
+        */
+
         const report =
-            decisionReport.build({
+            decisionReportService.build({
 
                 symbol:
-                    trade.symbol,
+                    marketContext.symbol,
 
                 confidence:
-                    trade.confidence,
+                    decision.confidence,
 
                 strategy:
-                    trade.strategy,
+                    decision.signal.strategy,
 
                 guardian:
-                    guardianReport.status,
+                    guardian.status,
 
                 recommendation:
-                    trade.recommendation,
+                    decision.reason,
 
                 risk:
-                    trade.risk
+                    automation.risk || "1%"
 
             });
 
-        replay.add(report);
+        /*
+        ======================================
+        Replay
+        ======================================
+        */
+
+        replayService.add(
+
+            report
+
+        );
+
+        /*
+        ======================================
+        Learning
+        ======================================
+        */
+
+        if (
+
+            learningEngine.recordDecision
+
+        ) {
+
+            learningEngine.recordDecision(
+
+                report
+
+            );
+
+        }
+
+        /*
+        ======================================
+        DNA
+        ======================================
+        */
+
+        if (
+
+            dnaEngine.recordDecision
+
+        ) {
+
+            dnaEngine.recordDecision(
+
+                report
+
+            );
+
+        }
+
+        /*
+        ======================================
+        Logging
+        ======================================
+        */
 
         logger.success(
 
@@ -96,19 +278,33 @@ class ExecutionPipeline {
 
         );
 
+        /*
+        ======================================
+        Notifications
+        ======================================
+        */
+
         notifications.add(
 
             "success",
 
             "Trade Approved",
 
-            trade.symbol
+            marketContext.symbol
 
         );
+
+        /*
+        ======================================
+        Complete
+        ======================================
+        */
 
         return {
 
             approved: true,
+
+            stage: "Completed",
 
             report
 
