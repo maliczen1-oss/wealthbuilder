@@ -92,6 +92,23 @@ const API = {
         return this.request("/api/automation");
 
     },
+async getSystemInfo() {
+
+    return this.request("/api/system-info");
+
+}
+
+async getNotifications() {
+
+    return this.request("/api/notifications");
+
+}
+
+async getReplay() {
+
+    return this.request("/api/replay");
+
+} 
 
     async updateAutomation(settings) {
 
