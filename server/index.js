@@ -14,6 +14,7 @@ const psychologyRoute = require("./routes/psychology");
 const automationRoute = require("./routes/automation");
 const readinessRoute = require("./routes/readiness");
 const systemRoute = require("./routes/system");
+const guardianRoute = require("./routes/guardian");
 
 const app = express();
 
@@ -27,8 +28,11 @@ const TOKEN = process.env.METAAPI_TOKEN;
 const ACCOUNT_ID = process.env.METAAPI_ACCOUNT_ID;
 
 if (!TOKEN || !ACCOUNT_ID) {
+
     console.error("Missing MetaApi credentials.");
+
     process.exit(1);
+
 }
 
 /*
@@ -69,6 +73,8 @@ app.use("/api/automation", automationRoute);
 app.use("/api/readiness", readinessRoute);
 
 app.use("/api/system", systemRoute);
+
+app.use("/api/guardian", guardianRoute);
 
 /*
 ==========================================================
