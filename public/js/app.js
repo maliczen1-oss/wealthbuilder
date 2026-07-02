@@ -1,7 +1,8 @@
 /*
 ==========================================================
 WealthBuilder OS
-Mission Control Controller
+Mission Control
+Application Controller
 Powered by Jarvis Intelligence
 ==========================================================
 */
@@ -10,227 +11,92 @@ class MissionControl {
 
     constructor() {
 
-        this.refreshInterval = 30000;
+        this.cards = [];
 
     }
 
     async initialize() {
 
-        console.log("Mission Control Initializing...");
+        console.log(
+            "Starting WealthBuilder OS..."
+        );
 
-        await this.loadHealth();
+        await this.checkConnection();
 
-        await this.loadMorningBrief();
+        this.createCards();
 
-        await this.loadReadiness();
+        await this.loadCards();
 
-        await this.loadAccount();
-
-        await this.loadAutomation();
-
-        await this.loadDNA();
-
-        await this.loadPsychology();
-
-        this.startClock();
-
-        this.startAutoRefresh();
-
-    }
-
-    async loadHealth() {
-
-        const health = await API.getHealth();
-
-        if (!health) return;
-
-        const broker =
-            document.getElementById("brokerName");
-
-        if (broker) {
-
-            broker.textContent =
-                health.broker || "Unknown Broker";
-
-        }
-
-    }
-
-    async loadMorningBrief() {
-
-        const brief =
-            await API.getMorningBrief();
-
-        const container =
-            document.getElementById("morningBrief");
-
-        if (!container) return;
-
-        if (!brief) {
-
-            container.innerHTML =
-                "Unable to load Morning Brief.";
-
-            return;
-
-        }
-
-        container.innerHTML = `
-            <strong>${brief.title || "Today's Brief"}</strong>
-            <br><br>
-            ${brief.message || "Welcome back to WealthBuilder."}
-        `;
-
-    }
-
-    async loadReadiness() {
-
-        const readiness =
-            await API.getReadiness();
-
-        if (!readiness) return;
-
-        document.getElementById(
-            "readinessScore"
-        ).textContent = readiness.score;
-
-        document.getElementById(
-            "readinessStatus"
-        ).textContent = readiness.status;
-
-        document.getElementById(
-            "wealthScore"
-        ).textContent = readiness.score;
-
-    }
-
-    async loadAccount() {
-
-        const account =
-            await API.getAccount();
-
-        const panel =
-            document.getElementById(
-                "accountHealth"
-            );
-
-        if (!panel) return;
-
-        if (!account) {
-
-            panel.innerHTML =
-                "Unable to load account.";
-
-            return;
-
-        }
-
-        panel.innerHTML = `
-            Balance:
-            ${account.balance}<br>
-
-            Equity:
-            ${account.equity}<br>
-
-            Margin:
-            ${account.margin}<br>
-
-            Free Margin:
-            ${account.freeMargin}
-        `;
-
-    }
-
-    async loadAutomation() {
-
-        const automation =
-            await API.getAutomation();
-
-        const panel =
-            document.getElementById(
-                "automationStatus"
-            );
-
-        if (!panel) return;
-
-        if (!automation) {
-
-            panel.innerHTML =
-                "Automation unavailable.";
-
-            return;
-
-        }
-
-        panel.innerHTML = `
-            Status:
-            <strong>
-
-            ${automation.enabled
-                ? "Enabled"
-                : "Disabled"}
-
-            </strong>
-        `;
-
-    }
-
-    async loadDNA() {
-
-        const dna =
-            await API.getDNA();
+        this.startRefreshLoop();
 
         console.log(
-            "DNA",
-            dna
+            "Mission Control Ready."
         );
 
     }
 
-    async loadPsychology() {
+    async checkConnection() {
 
-        const psychology =
-            await API.getPsychology();
+        const health =
+            await API.getHealth();
 
-        console.log(
-            "Psychology",
-            psychology
-        );
+        if (!health) {
 
-    }
-
-    startClock() {
-
-        const clock =
-            document.getElementById(
-                "serverTime"
+            console.error(
+                "Unable to reach backend."
             );
 
-        if (!clock) return;
-
-        setInterval(() => {
-
-            clock.textContent =
-                new Date()
-                .toLocaleTimeString();
-
-        }, 1000);
+        }
 
     }
 
-    startAutoRefresh() {
+    createCards() {
 
-        setInterval(() => {
+        this.cards = [
 
-            this.loadMorningBrief();
+            new MorningBriefCard(),
 
-            this.loadReadiness();
+            new ReadinessCard(),
 
-            this.loadAccount();
+            new AccountCard(),
 
-            this.loadAutomation();
+            new GuardianCard()
 
-        }, this.refreshInterval);
+        ];
+
+    }
+
+    async loadCards() {
+
+        for (const card of this.cards) {
+
+            if (typeof card.load === "function") {
+
+                try {
+
+                    await card.load();
+
+                }
+
+                catch (err) {
+
+                    console.error(err);
+
+                }
+
+            }
+
+        }
+
+    }
+
+    startRefreshLoop() {
+
+        setInterval(async () => {
+
+            await this.loadCards();
+
+        }, 30000);
 
     }
 
@@ -240,12 +106,12 @@ window.addEventListener(
 
     "DOMContentLoaded",
 
-    () => {
+    async () => {
 
-        const app =
+        const missionControl =
             new MissionControl();
 
-        app.initialize();
+        await missionControl.initialize();
 
     }
 
