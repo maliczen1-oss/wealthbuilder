@@ -50,21 +50,33 @@ class MissionControl {
 
     }
 
-    createCards() {
+createCards() {
 
-        this.cards = [
+    this.cards = [
 
-            new MorningBriefCard(),
+        new MorningBriefCard(),
 
-            new ReadinessCard(),
+        new ReadinessCard(),
 
-            new AccountCard(),
+        new AccountCard(),
 
-            new GuardianCard()
+        new GuardianCard(),
 
-        ];
+        new AutomationCard(),
 
-    }
+        new PlatformCard(),
+
+        new NotificationCard(),
+
+        new TradeStoryCard(),
+
+        new DNACard(),
+
+        new PsychologyCard()
+
+    ];
+
+}
 
     async loadCards() {
 
