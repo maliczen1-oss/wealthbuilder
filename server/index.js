@@ -409,3 +409,188 @@ app.get("/", (req, res) => {
     );
 
 });
+/*
+==========================================================
+Startup
+==========================================================
+*/
+
+async function start() {
+
+    console.log("");
+
+    console.log("======================================");
+    console.log("WealthBuilder OS");
+    console.log("Powered by Jarvis Intelligence");
+    console.log("======================================");
+    console.log("");
+
+    /*
+    --------------------------------------
+    Start Express immediately
+    --------------------------------------
+    */
+
+    app.listen(PORT, () => {
+
+        console.log(
+
+            `Server Running : http://localhost:${PORT}`
+
+        );
+
+        console.log(
+
+            `Environment    : ${process.env.NODE_ENV || "development"}`
+
+        );
+
+        console.log("");
+
+        console.log(
+
+            "Mission Control Online"
+
+        );
+
+        console.log("");
+
+    });
+
+    /*
+    --------------------------------------
+    Background MetaApi Connection
+    --------------------------------------
+    */
+
+    await connectMetaApi();
+
+    /*
+    --------------------------------------
+    Automatic Retry
+    --------------------------------------
+    */
+
+    setInterval(async () => {
+
+        if (
+
+            !state.metaApi.connected &&
+
+            !state.metaApi.connecting
+
+        ) {
+
+            console.log(
+
+                "Retrying MetaApi connection..."
+
+            );
+
+            await connectMetaApi();
+
+        }
+
+    }, 30000);
+
+}
+
+/*
+==========================================================
+Graceful Shutdown
+==========================================================
+*/
+
+process.on(
+
+    "SIGINT",
+
+    () => {
+
+        console.log("");
+
+        console.log(
+
+            "Stopping WealthBuilder OS..."
+
+        );
+
+        console.log("");
+
+        process.exit(0);
+
+    }
+
+);
+
+process.on(
+
+    "SIGTERM",
+
+    () => {
+
+        console.log("");
+
+        console.log(
+
+            "Stopping WealthBuilder OS..."
+
+        );
+
+        console.log("");
+
+        process.exit(0);
+
+    }
+
+);
+
+/*
+==========================================================
+Unhandled Errors
+==========================================================
+*/
+
+process.on(
+
+    "unhandledRejection",
+
+    err => {
+
+        console.error(
+
+            "Unhandled Promise Rejection"
+
+        );
+
+        console.error(err);
+
+    }
+
+);
+
+process.on(
+
+    "uncaughtException",
+
+    err => {
+
+        console.error(
+
+            "Uncaught Exception"
+
+        );
+
+        console.error(err);
+
+    }
+
+);
+
+/*
+==========================================================
+Start Server
+==========================================================
+*/
+
+start();
