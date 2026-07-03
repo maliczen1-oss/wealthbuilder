@@ -1,9 +1,30 @@
+/*
+==========================================================
+WealthBuilder OS
+Mission Control Server
+Powered by Jarvis Intelligence
+Production Edition
+==========================================================
+*/
+
 require("dotenv").config();
 
 const express = require("express");
 const path = require("path");
 
+/*
+==========================================================
+Services
+==========================================================
+*/
+
 const metaapi = require("./services/metaapi");
+
+/*
+==========================================================
+Routes
+==========================================================
+*/
 
 const historyRoute = require("./routes/history");
 const performanceRoute = require("./routes/performance");
@@ -13,23 +34,53 @@ const dnaRoute = require("./routes/dna");
 const psychologyRoute = require("./routes/psychology");
 const automationRoute = require("./routes/automation");
 const readinessRoute = require("./routes/readiness");
-const systemRoute = require("./routes/system");
 const guardianRoute = require("./routes/guardian");
+const systemRoute = require("./routes/system");
+
+/*
+==========================================================
+Application
+==========================================================
+*/
 
 const app = express();
 
 app.use(express.json());
 
-app.use(express.static(path.join(__dirname, "..", "public")));
+app.use(
+    express.static(
+        path.join(
+            __dirname,
+            "..",
+            "public"
+        )
+    )
+);
 
-const PORT = process.env.PORT || 3000;
+/*
+==========================================================
+Environment
+==========================================================
+*/
 
-const TOKEN = process.env.METAAPI_TOKEN;
-const ACCOUNT_ID = process.env.METAAPI_ACCOUNT_ID;
+const PORT =
+    process.env.PORT || 3000;
+
+const TOKEN =
+    process.env.METAAPI_TOKEN;
+
+const ACCOUNT_ID =
+    process.env.METAAPI_ACCOUNT_ID;
 
 if (!TOKEN || !ACCOUNT_ID) {
 
-    console.error("Missing MetaApi credentials.");
+    console.error("");
+
+    console.error(
+        "Missing MetaApi environment variables."
+    );
+
+    console.error("");
 
     process.exit(1);
 
@@ -37,144 +88,56 @@ if (!TOKEN || !ACCOUNT_ID) {
 
 /*
 ==========================================================
-MetaApi Middleware
+Application State
 ==========================================================
 */
 
-app.use((req, res, next) => {
+const state = {
 
-    req.connection = metaapi.getConnection();
-    req.account = metaapi.getAccount();
+    startedAt:
+        new Date(),
 
-    next();
+    metaApi: {
 
-});
+        connected: false,
 
-/*
-==========================================================
-API Routes
-==========================================================
-*/
+        connecting: false,
 
-app.use("/api/history", historyRoute);
+        account: null,
 
-app.use("/api/performance", performanceRoute);
+        connection: null,
 
-app.use("/api/analytics", analyticsRoute);
+        lastError: null,
 
-app.use("/api/morning-brief", morningBriefRoute);
-
-app.use("/api/dna", dnaRoute);
-
-app.use("/api/psychology", psychologyRoute);
-
-app.use("/api/automation", automationRoute);
-
-app.use("/api/readiness", readinessRoute);
-
-app.use("/api/system", systemRoute);
-
-app.use("/api/guardian", guardianRoute);
-
-/*
-==========================================================
-Core API
-==========================================================
-*/
-
-app.get("/api/health", (req, res) => {
-
-    res.json({
-
-        ok: true,
-
-        broker: req.account?.broker,
-
-        name: req.account?.name
-
-    });
-
-});
-
-app.get("/api/account", async (req, res) => {
-
-    try {
-
-        const info =
-            await req.connection.getAccountInformation();
-
-        res.json(info);
-
-    } catch (err) {
-
-        res.status(500).json({
-
-            error: err.message
-
-        });
+        lastConnected: null
 
     }
 
-});
-
-app.get("/api/positions", async (req, res) => {
-
-    try {
-
-        const positions =
-            await req.connection.getPositions();
-
-        res.json(positions);
-
-    } catch (err) {
-
-        res.status(500).json({
-
-            error: err.message
-
-        });
-
-    }
-
-});
+};
 
 /*
 ==========================================================
-Frontend
+MetaApi Background Connection
 ==========================================================
 */
 
-app.get("/", (req, res) => {
+async function connectMetaApi() {
 
-    res.sendFile(
+    if (state.metaApi.connecting) {
 
-        path.join(
+        return;
 
-            __dirname,
+    }
 
-            "..",
+    state.metaApi.connecting = true;
 
-            "public",
+    console.log("");
 
-            "index.html"
-
-        )
-
+    console.log(
+        "Connecting to MetaApi..."
     );
 
-});
-
-/*
-==========================================================
-Startup
-==========================================================
-*/
-
-async function start() {
-
     try {
-
-        console.log("Initializing WealthBuilder OS...");
 
         await metaapi.initialize(
 
@@ -184,30 +147,53 @@ async function start() {
 
         );
 
-        console.log("MetaApi Connected");
+        state.metaApi.connected = true;
 
-        app.listen(PORT, () => {
+        state.metaApi.connecting = false;
 
-            console.log("");
-            console.log("======================================");
-            console.log("WealthBuilder OS");
-            console.log("Powered by Jarvis Intelligence");
-            console.log("======================================");
-            console.log(`Server Running : http://localhost:${PORT}`);
-            console.log(`Environment    : ${process.env.NODE_ENV || "development"}`);
-            console.log("======================================");
-            console.log("");
+        state.metaApi.connection =
+            metaapi.getConnection();
 
-        });
+        state.metaApi.account =
+            metaapi.getAccount();
 
-    } catch (err) {
+        state.metaApi.lastConnected =
+            new Date();
 
-        console.error("Startup Failed");
-        console.error(err);
-        process.exit(1);
+        state.metaApi.lastError =
+            null;
+
+        console.log("");
+
+        console.log(
+            "MetaApi Connected"
+        );
+
+        console.log("");
+
+    }
+
+    catch (err) {
+
+        state.metaApi.connected = false;
+
+        state.metaApi.connecting = false;
+
+        state.metaApi.lastError =
+            err.message;
+
+        console.error("");
+
+        console.error(
+            "MetaApi Connection Failed"
+        );
+
+        console.error(
+            err.message
+        );
+
+        console.error("");
 
     }
 
 }
-
-start();
