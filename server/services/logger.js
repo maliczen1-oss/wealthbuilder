@@ -202,3 +202,302 @@ class Logger {
         return entry;
 
     }
+    /*
+    ======================================================
+    Console Output
+    ======================================================
+    */
+
+    write(entry) {
+
+        if (!CONFIG.LOG_TO_CONSOLE) {
+
+            return;
+
+        }
+
+        const prefix =
+
+            `[${entry.timestamp}] ` +
+
+            `[${entry.level}] ` +
+
+            `[${entry.source}]`;
+
+        switch (entry.level) {
+
+            case "DEBUG":
+
+                console.debug(
+
+                    prefix,
+
+                    entry.message,
+
+                    entry.context
+
+                );
+
+                break;
+
+            case "INFO":
+
+                console.info(
+
+                    prefix,
+
+                    entry.message,
+
+                    entry.context
+
+                );
+
+                break;
+
+            case "SUCCESS":
+
+                console.log(
+
+                    prefix,
+
+                    entry.message,
+
+                    entry.context
+
+                );
+
+                break;
+
+            case "WARNING":
+
+                console.warn(
+
+                    prefix,
+
+                    entry.message,
+
+                    entry.context
+
+                );
+
+                break;
+
+            case "ERROR":
+
+            case "CRITICAL":
+
+                console.error(
+
+                    prefix,
+
+                    entry.message,
+
+                    entry.context
+
+                );
+
+                break;
+
+        }
+
+    }
+
+    /*
+    ======================================================
+    Core Logger
+    ======================================================
+    */
+
+    log(
+
+        level,
+
+        source,
+
+        message,
+
+        context = {}
+
+    ) {
+
+        if (
+
+            !this.shouldLog(level)
+
+        ) {
+
+            return null;
+
+        }
+
+        const entry =
+
+            this.createEntry({
+
+                level,
+
+                source,
+
+                message,
+
+                context
+
+            });
+
+        this.add(entry);
+
+        this.write(entry);
+
+        return entry;
+
+    }
+
+    /*
+    ======================================================
+    Public API
+    ======================================================
+    */
+
+    debug(
+
+        source,
+
+        message,
+
+        context = {}
+
+    ) {
+
+        return this.log(
+
+            "DEBUG",
+
+            source,
+
+            message,
+
+            context
+
+        );
+
+    }
+
+    info(
+
+        source,
+
+        message,
+
+        context = {}
+
+    ) {
+
+        return this.log(
+
+            "INFO",
+
+            source,
+
+            message,
+
+            context
+
+        );
+
+    }
+
+    success(
+
+        source,
+
+        message,
+
+        context = {}
+
+    ) {
+
+        return this.log(
+
+            "SUCCESS",
+
+            source,
+
+            message,
+
+            context
+
+        );
+
+    }
+
+    warning(
+
+        source,
+
+        message,
+
+        context = {}
+
+    ) {
+
+        return this.log(
+
+            "WARNING",
+
+            source,
+
+            message,
+
+            context
+
+        );
+
+    }
+
+    error(
+
+        source,
+
+        message,
+
+        context = {}
+
+    ) {
+
+        return this.log(
+
+            "ERROR",
+
+            source,
+
+            message,
+
+            context
+
+        );
+
+    }
+
+    critical(
+
+        source,
+
+        message,
+
+        context = {}
+
+    ) {
+
+        return this.log(
+
+            "CRITICAL",
+
+            source,
+
+            message,
+
+            context
+
+        );
+
+    }
