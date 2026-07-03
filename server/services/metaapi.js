@@ -1,51 +1,102 @@
+/*
+==========================================================
+WealthBuilder OS
+MetaApi Service
+Version: 2.0.0
+Status: Production
+Powered by Jarvis Intelligence
+==========================================================
+*/
+
 const MetaApi = require("metaapi.cloud-sdk").default;
+
+/*
+==========================================================
+Internal State
+==========================================================
+*/
 
 let api = null;
 let account = null;
 let connection = null;
 
-async function initialize(token, accountId) {
+let initializing = false;
 
-    api = new MetaApi(token);
+const state = {
 
-    account =
-        await api.metatraderAccountApi.getAccount(
-            accountId
-        );
+    connected: false,
 
-    if (account.state !== "DEPLOYED") {
-        await account.deploy();
-    }
+    synchronized: false,
 
-    await account.waitConnected();
+    initialized: false,
 
-    connection =
-        account.getRPCConnection();
+    lastConnected: null,
 
-    await connection.connect();
+    lastError: null,
 
-    await connection.waitSynchronized();
-
-    console.log(
-        "MetaApi synchronized successfully."
-    );
-
-}
-
-function getConnection() {
-    return connection;
-}
-
-function getAccount() {
-    return account;
-}
-
-module.exports = {
-
-    initialize,
-
-    getConnection,
-
-    getAccount
+    retryCount: 0
 
 };
+
+/*
+==========================================================
+MetaApi Service
+==========================================================
+*/
+
+class MetaApiService {
+
+    /*
+    ======================================================
+    Initialize
+    ======================================================
+    */
+
+    async initialize(token, accountId) {
+
+        if (state.initialized) {
+
+            return;
+
+        }
+
+        if (initializing) {
+
+            return;
+
+        }
+
+        initializing = true;
+
+        console.log("");
+
+        console.log("======================================");
+        console.log("MetaApi Initialization");
+        console.log("======================================");
+
+        try {
+
+            api = new MetaApi(token);
+
+            account =
+                await api
+                    .metatraderAccountApi
+                    .getAccount(accountId);
+
+            console.log(
+                "Account Found:",
+                account.name
+            );
+
+        }
+
+        catch (err) {
+
+            state.lastError =
+                err.message;
+
+            initializing = false;
+
+            throw err;
+
+        }
