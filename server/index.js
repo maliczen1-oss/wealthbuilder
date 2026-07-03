@@ -197,3 +197,215 @@ async function connectMetaApi() {
     }
 
 }
+/*
+==========================================================
+MetaApi Middleware
+==========================================================
+*/
+
+app.use((req, res, next) => {
+
+    req.connection =
+        state.metaApi.connection;
+
+    req.account =
+        state.metaApi.account;
+
+    req.metaApi = {
+
+        connected:
+            state.metaApi.connected,
+
+        connecting:
+            state.metaApi.connecting,
+
+        lastError:
+            state.metaApi.lastError
+
+    };
+
+    next();
+
+});
+
+/*
+==========================================================
+API Routes
+==========================================================
+*/
+
+app.use("/api/history", historyRoute);
+
+app.use("/api/performance", performanceRoute);
+
+app.use("/api/analytics", analyticsRoute);
+
+app.use("/api/morning-brief", morningBriefRoute);
+
+app.use("/api/dna", dnaRoute);
+
+app.use("/api/psychology", psychologyRoute);
+
+app.use("/api/automation", automationRoute);
+
+app.use("/api/readiness", readinessRoute);
+
+app.use("/api/guardian", guardianRoute);
+
+app.use("/api/system", systemRoute);
+
+/*
+==========================================================
+Health
+==========================================================
+*/
+
+app.get("/api/health", (req, res) => {
+
+    res.json({
+
+        ok: true,
+
+        service: "WealthBuilder OS",
+
+        version: "1.0",
+
+        uptime:
+
+            Math.floor(
+
+                process.uptime()
+
+            ),
+
+        metaApi: {
+
+            connected:
+                state.metaApi.connected,
+
+            connecting:
+                state.metaApi.connecting,
+
+            lastConnected:
+                state.metaApi.lastConnected,
+
+            lastError:
+                state.metaApi.lastError
+
+        }
+
+    });
+
+});
+
+/*
+==========================================================
+Account
+==========================================================
+*/
+
+app.get("/api/account", async (req, res) => {
+
+    if (!req.connection) {
+
+        return res.status(503).json({
+
+            error:
+
+                "MetaApi not connected."
+
+        });
+
+    }
+
+    try {
+
+        const account =
+
+            await req.connection
+                .getAccountInformation();
+
+        res.json(account);
+
+    }
+
+    catch (err) {
+
+        res.status(500).json({
+
+            error: err.message
+
+        });
+
+    }
+
+});
+
+/*
+==========================================================
+Positions
+==========================================================
+*/
+
+app.get("/api/positions", async (req, res) => {
+
+    if (!req.connection) {
+
+        return res.status(503).json({
+
+            error:
+
+                "MetaApi not connected."
+
+        });
+
+    }
+
+    try {
+
+        const positions =
+
+            await req.connection
+                .getPositions();
+
+        res.json(positions);
+
+    }
+
+    catch (err) {
+
+        res.status(500).json({
+
+            error: err.message
+
+        });
+
+    }
+
+});
+
+/*
+==========================================================
+Frontend
+==========================================================
+*/
+
+app.get("/", (req, res) => {
+
+    res.sendFile(
+
+        path.join(
+
+            __dirname,
+
+            "..",
+
+            "public",
+
+            "index.html"
+
+        )
+
+    );
+
+});
