@@ -501,3 +501,230 @@ class Logger {
         );
 
     }
+    /*
+    ======================================================
+    Read-Only Properties
+    ======================================================
+    */
+
+    get history() {
+
+        return [...this.logs];
+
+    }
+
+    get health() {
+
+        return {
+
+            started: this.started,
+
+            uptime:
+
+                Math.floor(
+
+                    (Date.now() -
+
+                    this.started.getTime())
+
+                    / 1000
+
+                ),
+
+            totalLogs:
+
+                this.logs.length,
+
+            maxLogs:
+
+                CONFIG.MAX_LOGS
+
+        };
+
+    }
+
+    /*
+    ======================================================
+    Statistics
+    ======================================================
+    */
+
+    getStatistics() {
+
+        const statistics = {
+
+            total: this.logs.length,
+
+            levels: {},
+
+            sources: {}
+
+        };
+
+        for (const log of this.logs) {
+
+            statistics.levels[log.level] =
+
+                (statistics.levels[log.level] || 0) + 1;
+
+            statistics.sources[log.source] =
+
+                (statistics.sources[log.source] || 0) + 1;
+
+        }
+
+        return statistics;
+
+    }
+
+    /*
+    ======================================================
+    Search
+    ======================================================
+    */
+
+    getByLevel(level) {
+
+        return this.logs.filter(
+
+            log => log.level === level
+
+        );
+
+    }
+
+    getBySource(source) {
+
+        return this.logs.filter(
+
+            log => log.source === source
+
+        );
+
+    }
+
+    latest(count = 25) {
+
+        return this.logs
+
+            .slice(-count)
+
+            .reverse();
+
+    }
+
+    /*
+    ======================================================
+    Maintenance
+    ======================================================
+    */
+
+    clear() {
+
+        this.logs = [];
+
+    }
+
+    /*
+    ======================================================
+    Performance Timer
+    ======================================================
+    */
+
+    startTimer(name) {
+
+        if (!this.timers) {
+
+            this.timers = new Map();
+
+        }
+
+        this.timers.set(
+
+            name,
+
+            Date.now()
+
+        );
+
+    }
+
+    endTimer(
+
+        name,
+
+        source = SOURCES.SYSTEM
+
+    ) {
+
+        if (
+
+            !this.timers ||
+
+            !this.timers.has(name)
+
+        ) {
+
+            return null;
+
+        }
+
+        const started =
+
+            this.timers.get(name);
+
+        const duration =
+
+            Date.now() - started;
+
+        this.timers.delete(name);
+
+        this.debug(
+
+            source,
+
+            `${name} completed`,
+
+            {
+
+                duration:
+
+                    `${duration} ms`
+
+            }
+
+        );
+
+        return duration;
+
+    }
+
+}
+
+/*
+==========================================================
+Singleton Export
+==========================================================
+*/
+
+const logger = new Logger();
+
+/*
+==========================================================
+Expose Constants
+==========================================================
+*/
+
+logger.LEVELS = Object.freeze(LEVELS);
+
+logger.SOURCES = Object.freeze(SOURCES);
+
+logger.CONFIG = Object.freeze(CONFIG);
+
+/*
+==========================================================
+Export
+==========================================================
+*/
+
+module.exports = logger;
