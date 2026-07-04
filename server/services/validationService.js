@@ -226,3 +226,185 @@ class ValidationService {
         return result;
 
     }
+    /*
+    ======================================================
+    Connection Validation
+    ======================================================
+    */
+
+    validateConnection(connection = null) {
+
+        const result = this.createResult();
+
+        if (!connection) {
+
+            this.addError(
+                result,
+                "connection",
+                "Trading connection unavailable."
+            );
+
+            logger.error(
+                logger.SOURCES.METAAPI,
+                "Connection validation failed."
+            );
+
+            return result;
+
+        }
+
+        this.addSuccess(
+            result,
+            "connection"
+        );
+
+        return result;
+
+    }
+
+    /*
+    ======================================================
+    Broker Validation
+    ======================================================
+    */
+
+    validateBroker(broker = {}) {
+
+        const result = this.createResult();
+
+        if (!broker.name) {
+
+            this.addError(
+                result,
+                "broker",
+                "Broker not detected."
+            );
+
+        } else {
+
+            this.addSuccess(
+                result,
+                "broker"
+            );
+
+        }
+
+        if (!broker.accountType) {
+
+            this.addWarning(
+                result,
+                "accountType",
+                "Account type not identified."
+            );
+
+        }
+
+        return result;
+
+    }
+
+    /*
+    ======================================================
+    Account Validation
+    ======================================================
+    */
+
+    validateAccount(account = {}) {
+
+        const result = this.createResult();
+
+        if (!account.id) {
+
+            this.addError(
+                result,
+                "account",
+                "Account not available."
+            );
+
+            return result;
+
+        }
+
+        this.addSuccess(
+            result,
+            "account"
+        );
+
+        if (
+
+            account.balance !== undefined &&
+            account.balance <= 0
+
+        ) {
+
+            this.addWarning(
+                result,
+                "balance",
+                "Account balance is zero."
+            );
+
+        }
+
+        if (
+
+            account.equity !== undefined &&
+            account.equity < 0
+
+        ) {
+
+            this.addError(
+                result,
+                "equity",
+                "Negative account equity."
+            );
+
+        }
+
+        return result;
+
+    }
+
+    /*
+    ======================================================
+    Symbol Validation
+    ======================================================
+    */
+
+    validateSymbol(symbol = {}) {
+
+        const result = this.createResult();
+
+        if (!symbol.name) {
+
+            this.addError(
+                result,
+                "symbol",
+                "Trading symbol missing."
+            );
+
+            return result;
+
+        }
+
+        this.addSuccess(
+            result,
+            "symbol"
+        );
+
+        if (
+
+            symbol.tradeAllowed === false
+
+        ) {
+
+            this.addError(
+                result,
+                "tradable",
+                "Symbol is not tradable."
+            );
+
+        }
+
+        return result;
+
+            }
