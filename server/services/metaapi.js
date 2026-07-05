@@ -500,7 +500,171 @@ class MetaApiService {
     ======================================================
     */
 
-    getRetryCount() {
+    getRetryCount()    /*
+    ======================================================
+    Disconnect
+    ======================================================
+    */
+
+    async disconnect() {
+
+        logger.info(
+
+            logger.SOURCES.METAAPI,
+
+            "Disconnecting MetaApi service."
+
+        );
+
+        try {
+
+            if (connection) {
+
+                if (typeof connection.close === "function") {
+
+                    await connection.close();
+
+                }
+
+            }
+
+        } catch (error) {
+
+            logger.warning(
+
+                logger.SOURCES.METAAPI,
+
+                "Failed to close RPC connection.",
+
+                {
+
+                    error: error.message
+
+                }
+
+            );
+
+        }
+
+        connection = null;
+
+        state.connected = false;
+
+        state.synchronized = false;
+
+        logger.success(
+
+            logger.SOURCES.METAAPI,
+
+            "MetaApi disconnected."
+
+        );
+
+    }
+
+    /*
+    ======================================================
+    Reset Service
+    ======================================================
+    */
+
+    reset() {
+
+        api = null;
+
+        account = null;
+
+        connection = null;
+
+        initializing = false;
+
+        state.initialized = false;
+
+        state.connected = false;
+
+        state.synchronized = false;
+
+        state.retryCount = 0;
+
+        state.lastConnected = null;
+
+        state.lastError = null;
+
+        logger.info(
+
+            logger.SOURCES.METAAPI,
+
+            "MetaApi service reset."
+
+        );
+
+    }
+
+    /*
+    ======================================================
+    Restart Service
+    ======================================================
+    */
+
+    async restart(token, accountId) {
+
+        await this.disconnect();
+
+        this.reset();
+
+        return this.initialize(
+
+            token,
+
+            accountId
+
+        );
+
+    }
+
+    /*
+    ======================================================
+    Readiness
+    ======================================================
+    */
+
+    isReady() {
+
+        return (
+
+            state.initialized &&
+
+            state.connected &&
+
+            state.synchronized
+
+        );
+
+    }
+
+    /*
+    ======================================================
+    Version
+    ======================================================
+    */
+
+    getVersion() {
+
+        return this.VERSION;
+
+    }
+
+}
+
+/*
+==========================================================
+Singleton Export
+==========================================================
+*/
+
+const metaApiService = new MetaApiService();
+
+module.exports = metaApiService; {
 
         return state.retryCount;
 
