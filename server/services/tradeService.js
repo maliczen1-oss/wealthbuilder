@@ -1,116 +1,115 @@
-const { getConnection } = require("./metaapi");
+/*
+==========================================================
+WealthBuilder OS
+Trade Service
 
+Version : 2.0.0
+Status  : Production
+Powered by Jarvis Intelligence
+
+Purpose:
+Central trading service responsible for executing
+validated trades.
+
+All trade requests pass through this service.
+
+==========================================================
+*/
+
+const brokerGateway = require("./brokerGateway");
+const validationService = require("./validationService");
 const positionService = require("./positionService");
 const riskService = require("./riskService");
+const logger = require("./logger");
 
-async function openBuy(
-    symbol,
-    stopLossPips,
-    takeProfitPips,
-    riskPercent = 1
-) {
+class TradeService {
 
-    const connection = getConnection();
+    constructor() {
 
-    if (!(await positionService.canOpenPosition())) {
-
-        throw new Error(
-            "Maximum number of positions reached."
-        );
+        this.VERSION = "2.0.0";
 
     }
 
-    if (await positionService.hasOpenPosition(symbol)) {
+    /*
+    ======================================================
+    Response Factory
+    ======================================================
+    */
 
-        throw new Error(
-            `${symbol} already has an open trade.`
-        );
+    createResponse() {
+
+        return {
+
+            success: false,
+
+            action: null,
+
+            symbol: null,
+
+            volume: 0,
+
+            tradeId: null,
+
+            validation: null,
+
+            execution: null,
+
+            message: ""
+
+        };
 
     }
 
-    const volume =
-        await riskService.calculateLotSize(
-            stopLossPips,
-            10,
-            riskPercent
-        );
+    /*
+    ======================================================
+    Core Trade Execution
+    ======================================================
+    */
 
-    return await connection.createMarketBuyOrder(
+    async executeTrade({
+
+        action,
 
         symbol,
 
-        volume,
+        stopLoss,
 
-        stopLossPips,
+        takeProfit,
 
-        takeProfitPips
+        riskPercent = 1
 
-    );
+    }) {
 
-}
+        const response =
 
-async function openSell(
-    symbol,
-    stopLossPips,
-    takeProfitPips,
-    riskPercent = 1
-) {
+            this.createResponse();
 
-    const connection = getConnection();
+        response.action = action;
 
-    if (!(await positionService.canOpenPosition())) {
+        response.symbol = symbol;
 
-        throw new Error(
-            "Maximum number of positions reached."
+        logger.info(
+
+            logger.SOURCES.EXECUTION,
+
+            "Trade execution requested.",
+
+            {
+
+                action,
+
+                symbol,
+
+                riskPercent
+
+            }
+
         );
+
+        /*
+        Stage 2 will continue here...
+        */
+
+        return response;
 
     }
-
-    if (await positionService.hasOpenPosition(symbol)) {
-
-        throw new Error(
-            `${symbol} already has an open trade.`
-        );
-
-    }
-
-    const volume =
-        await riskService.calculateLotSize(
-            stopLossPips,
-            10,
-            riskPercent
-        );
-
-    return await connection.createMarketSellOrder(
-
-        symbol,
-
-        volume,
-
-        stopLossPips,
-
-        takeProfitPips
-
-    );
-
-}
-
-async function closePosition(positionId) {
-
-    const connection = getConnection();
-
-    return await connection.closePosition(
-        positionId
-    );
-
-}
-
-module.exports = {
-
-    openBuy,
-
-    openSell,
-
-    closePosition
-
-};
