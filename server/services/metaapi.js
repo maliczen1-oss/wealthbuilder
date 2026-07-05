@@ -276,4 +276,232 @@ class MetaApiService {
 
         }
 
+    }    /*
+    ======================================================
+    Get RPC Connection
+    ======================================================
+    */
+
+    getConnection() {
+
+        if (!connection) {
+
+            throw new Error(
+                "MetaApi connection is not available. Call initialize() first."
+            );
+
+        }
+
+        return connection;
+
+    }
+
+    /*
+    ======================================================
+    Get MetaTrader Account
+    ======================================================
+    */
+
+    getAccount() {
+
+        if (!account) {
+
+            throw new Error(
+                "MetaTrader account has not been initialized."
+            );
+
+        }
+
+        return account;
+
+    }
+
+    /*
+    ======================================================
+    Get MetaApi SDK
+    ======================================================
+    */
+
+    getApi() {
+
+        return api;
+
+    }
+
+    /*
+    ======================================================
+    Service State
+    ======================================================
+    */
+
+    getState() {
+
+        return {
+
+            ...state
+
+        };
+
+    }
+
+    /*
+    ======================================================
+    Status Helpers
+    ======================================================
+    */
+
+    isInitialized() {
+
+        return state.initialized;
+
+    }
+
+    isConnected() {
+
+        return state.connected;
+
+    }
+
+    isSynchronized() {
+
+        return state.synchronized;
+
+    }
+
+    /*
+    ======================================================
+    Health Report
+    ======================================================
+    */
+
+    getHealth() {
+
+        return {
+
+            service: "MetaApi",
+
+            version: this.VERSION,
+
+            initialized: state.initialized,
+
+            connected: state.connected,
+
+            synchronized: state.synchronized,
+
+            retryCount: state.retryCount,
+
+            lastConnected: state.lastConnected,
+
+            lastError: state.lastError,
+
+            account: account
+                ? {
+                    id: account.id,
+                    name: account.name,
+                    state: account.state
+                }
+                : null
+
+        };
+
+    }
+
+    /*
+    ======================================================
+    Synchronize Connection
+    ======================================================
+    */
+
+    async synchronize() {
+
+        const rpc = this.getConnection();
+
+        logger.info(
+
+            logger.SOURCES.METAAPI,
+
+            "Synchronizing MetaApi connection."
+
+        );
+
+        await rpc.waitSynchronized();
+
+        state.connected = true;
+
+        state.synchronized = true;
+
+        state.lastConnected = new Date().toISOString();
+
+        logger.success(
+
+            logger.SOURCES.METAAPI,
+
+            "Synchronization complete."
+
+        );
+
+        return true;
+
+    }
+
+    /*
+    ======================================================
+    Verify Connection
+    ======================================================
+    */
+
+    async verifyConnection() {
+
+        if (!connection) {
+
+            return false;
+
+        }
+
+        try {
+
+            await connection.getAccountInformation();
+
+            state.connected = true;
+
+            return true;
+
+        }
+
+        catch (error) {
+
+            state.connected = false;
+
+            state.lastError = error.message;
+
+            logger.warning(
+
+                logger.SOURCES.METAAPI,
+
+                "MetaApi connection verification failed.",
+
+                {
+
+                    error: error.message
+
+                }
+
+            );
+
+            return false;
+
+        }
+
+    }
+
+    /*
+    ======================================================
+    Retry Counter
+    ======================================================
+    */
+
+    getRetryCount() {
+
+        return state.retryCount;
+
     }
