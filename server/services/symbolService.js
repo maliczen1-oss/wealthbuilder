@@ -1,66 +1,209 @@
-const { getConnection } = require("./metaapi");
+"use strict";
+
+/*
+==========================================================
+WealthBuilder OS
+
+Symbol Service
+
+Version : 2.0.0
+Status  : Production
+Atlas Certified
+
+Purpose
+-------
+Provides broker-independent symbol discovery and
+normalization for the trading engine.
+
+Dependencies
+------------
+metaapi.js
+logger.js
+
+==========================================================
+*/
+
+const metaapi = require("./metaapi");
+const logger = require("./logger");
+
+const CACHE_TTL = 60000;
+
+let symbolCache = [];
+let cacheTimestamp = 0;
+
+/*
+==========================================================
+Internal Helpers
+==========================================================
+*/
+
+function cacheValid() {
+
+    return (
+        Array.isArray(symbolCache) &&
+        (Date.now() - cacheTimestamp) < CACHE_TTL
+    );
+
+}
+
+async function fetchSymbols() {
+
+    if (cacheValid()) {
+        return symbolCache;
+    }
+
+    try {
+
+        const connection = await metaapi.getConnection();
+
+        const symbols = await connection.getSymbols();
+
+        symbolCache = symbols;
+        cacheTimestamp = Date.now();
+
+        logger.info(
+            logger.SOURCES.MARKET,
+            "Trading symbols refreshed.",
+            {
+                count: symbols.length
+            }
+        );
+
+        return symbols;
+
+    } catch (error) {
+
+        logger.error(
+            logger.SOURCES.MARKET,
+            "Failed to retrieve trading symbols.",
+            {
+                error: error.message
+            }
+        );
+
+        throw error;
+
+    }
+
+}
+
+function normalize(value) {
+
+    return String(value || "")
+        .replace(/[^A-Za-z0-9]/g, "")
+        .toUpperCase();
+
+}
+
+/*
+==========================================================
+Public API
+==========================================================
+*/
 
 async function getAvailableSymbols() {
-  const connection = getConnection();
 
-  return await connection.getSymbols();
+    return fetchSymbols();
+
 }
 
 async function findSymbol(baseSymbol) {
-  const symbols = await getAvailableSymbols();
 
-  const exact = symbols.find(
-    s => s.symbol === baseSymbol
-  );
+    const symbols = await fetchSymbols();
 
-  if (exact) return exact.symbol;
+    const target = normalize(baseSymbol);
 
-  const lower = baseSymbol.toLowerCase();
-
-  const match = symbols.find(s => {
-    const symbol = s.symbol.toLowerCase();
-
-    return (
-      symbol === lower ||
-      symbol.includes(lower) ||
-      symbol.startsWith(lower) ||
-      symbol.endsWith(lower)
+    const exact = symbols.find(symbol =>
+        normalize(symbol.symbol) === target
     );
-  });
 
-  return match ? match.symbol : null;
+    if (exact) {
+        return exact.symbol;
+    }
+
+    const partial = symbols.find(symbol => {
+
+        const brokerSymbol = normalize(symbol.symbol);
+
+        return (
+            brokerSymbol.includes(target) ||
+            brokerSymbol.startsWith(target) ||
+            brokerSymbol.endsWith(target)
+        );
+
+    });
+
+    return partial ? partial.symbol : null;
+
 }
 
 async function getEURUSD() {
-  return await findSymbol("EURUSD");
+
+    return findSymbol("EURUSD");
+
 }
 
 async function getGBPUSD() {
-  return await findSymbol("GBPUSD");
+
+    return findSymbol("GBPUSD");
+
 }
 
 async function getUSDJPY() {
-  return await findSymbol("USDJPY");
+
+    return findSymbol("USDJPY");
+
 }
 
 async function getXAUUSD() {
-  return await findSymbol("XAUUSD");
+
+    return (
+        await findSymbol("XAUUSD") ||
+        await findSymbol("GOLD")
+    );
+
 }
 
 async function getNAS100() {
-  return (
-    await findSymbol("NAS100") ||
-    await findSymbol("USTEC") ||
-    await findSymbol("US100")
-  );
+
+    return (
+        await findSymbol("NAS100") ||
+        await findSymbol("USTEC") ||
+        await findSymbol("US100")
+    );
+
 }
 
+/*
+==========================================================
+Cache Management
+==========================================================
+*/
+
+function clearCache() {
+
+    symbolCache = [];
+    cacheTimestamp = 0;
+
+}
+
+/*
+==========================================================
+Exports
+==========================================================
+*/
+
 module.exports = {
-  getAvailableSymbols,
-  findSymbol,
-  getEURUSD,
-  getGBPUSD,
-  getUSDJPY,
-  getXAUUSD,
-  getNAS100
+
+    getAvailableSymbols,
+    findSymbol,
+
+    getEURUSD,
+    getGBPUSD,
+    getUSDJPY,
+    getXAUUSD,
+    getNAS100,
+
+    clearCache
+
 };
