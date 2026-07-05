@@ -250,4 +250,146 @@ class TradeService {
 
             ready: true
 
-        };
+    /*
+    ======================================================
+    BUY
+    ======================================================
+    */
+
+    async openBuy(
+        symbol,
+        stopLoss,
+        takeProfit,
+        riskPercent = 1
+    ) {
+
+        return this.executeTrade({
+
+            action: "BUY",
+
+            symbol,
+
+            stopLoss,
+
+            takeProfit,
+
+            riskPercent
+
+        });
+
+    }
+
+    /*
+    ======================================================
+    SELL
+    ======================================================
+    */
+
+    async openSell(
+        symbol,
+        stopLoss,
+        takeProfit,
+        riskPercent = 1
+    ) {
+
+        return this.executeTrade({
+
+            action: "SELL",
+
+            symbol,
+
+            stopLoss,
+
+            takeProfit,
+
+            riskPercent
+
+        });
+
+    }
+
+    /*
+    ======================================================
+    Close Position
+    ======================================================
+    */
+
+    async closePosition(positionId) {
+
+        const response =
+
+            this.createResponse();
+
+        try {
+
+            const connection =
+
+                brokerGateway.connection;
+
+            if (!connection) {
+
+                response.message =
+
+                    "Broker connection unavailable.";
+
+                return response;
+
+            }
+
+            await connection.closePosition(positionId);
+
+            response.success = true;
+
+            response.tradeId = positionId;
+
+            response.message =
+
+                "Position closed successfully.";
+
+            logger.success(
+
+                logger.SOURCES.EXECUTION,
+
+                response.message,
+
+                {
+
+                    positionId
+
+                }
+
+            );
+
+            return response;
+
+        }
+
+        catch (err) {
+
+            response.message = err.message;
+
+            logger.error(
+
+                logger.SOURCES.EXECUTION,
+
+                "Failed to close position.",
+
+                {
+
+                    positionId,
+
+                    error: err.message
+
+                }
+
+            );
+
+            return response;
+
+        }
+
+    }
+
+}
+
+module.exports = new TradeService();        };
