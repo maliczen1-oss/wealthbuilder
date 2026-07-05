@@ -1,32 +1,73 @@
+"use strict";
+
 /*
 ==========================================================
 WealthBuilder OS
+
 Trade Service
 
-Version : 2.0.0
+Version : 2.1.0
 Status  : Production
-Powered by Jarvis Intelligence
+Atlas Certification : Pending
 
-Purpose:
-Central trading service responsible for executing
-validated trades.
+Purpose
+-------
+Central execution engine for WealthBuilder.
 
-All trade requests pass through this service.
+Responsibilities
+----------------
+✓ Market BUY
+✓ Market SELL
+✓ Pending Order Framework
+✓ AI Optimisation Framework
+✓ Trade Clustering Framework
+✓ Risk Validation
+✓ Position Validation
+✓ Market Validation
+✓ Structured Execution
+✓ Audit Logging
+
+Future
+------
+- AI Learning
+- Pending Order Execution
+- Portfolio Optimisation
+- Replay Intelligence
 
 ==========================================================
 */
 
-const brokerGateway = require("./brokerGateway");
-const validationService = require("./validationService");
-const positionService = require("./positionService");
-const riskService = require("./riskService");
+const crypto = require("node:crypto");
+
 const logger = require("./logger");
+const metaapi = require("./metaapi");
+
+const validationService = require("./validationService");
+const accountService = require("./accountService");
+const positionService = require("./positionService");
+const symbolService = require("./symbolService");
+const marketService = require("./marketService");
+const riskService = require("./riskService");
+
+/*
+==========================================================
+Execution Locks
+==========================================================
+*/
+
+const executionLocks = new Map();
+
+/*
+==========================================================
+Trade Service
+==========================================================
+*/
 
 class TradeService {
 
     constructor() {
 
-        this.VERSION = "2.0.0";
+        this.VERSION = "2.1.0";
 
     }
 
@@ -42,17 +83,35 @@ class TradeService {
 
             success: false,
 
+            transactionId: null,
+
+            clusterId: null,
+
+            orderId: null,
+
+            positionId: null,
+
             action: null,
+
+            requestedSymbol: null,
 
             symbol: null,
 
             volume: 0,
 
-            tradeId: null,
+            entryPrice: null,
 
-            validation: null,
+            stopLoss: null,
 
-            execution: null,
+            takeProfit: null,
+
+            confidence: null,
+
+            executionType: null,
+
+            executedAt: null,
+
+            warnings: [],
 
             message: ""
 
@@ -62,31 +121,120 @@ class TradeService {
 
     /*
     ======================================================
-    Core Trade Execution
+    Transaction ID
     ======================================================
     */
 
-    async executeTrade({
+    createTransactionId() {
 
-        action,
+        return crypto.randomUUID();
 
-        symbol,
+    }
 
-        stopLoss,
+    /*
+    ======================================================
+    Trade Cluster
+    ======================================================
+    */
 
-        takeProfit,
+    createClusterId(symbol) {
 
-        riskPercent = 1
+        const date = new Date()
+            .toISOString()
+            .substring(0,10);
 
-    }) {
+        return `CLUSTER-${symbol}-${date}`;
+
+    }
+
+    /*
+    ======================================================
+    AI Optimisation
+    (Framework V1)
+    ======================================================
+    */
+
+    async optimiseTrade(request) {
+
+        return {
+
+            approved: true,
+
+            confidence: 80,
+
+            adjustments: {
+
+                riskPercent:
+                    request.riskPercent,
+
+                stopLoss:
+                    request.stopLoss,
+
+                takeProfit:
+                    request.takeProfit
+
+            },
+
+            warnings: []
+
+        };
+
+    }
+
+    /*
+    ======================================================
+    Execution Lock
+    ======================================================
+    */
+
+    async withExecutionLock(key, callback) {
+
+        if (executionLocks.has(key)) {
+
+            throw new Error(
+                "Trade execution already in progress."
+            );
+
+        }
+
+        executionLocks.set(key, true);
+
+        try {
+
+            return await callback();
+
+        }
+
+        finally {
+
+            executionLocks.delete(key);
+
+        }
+
+    }
+
+    /*
+    ======================================================
+    Execute Trade
+    ======================================================
+    */
+
+    async executeTrade(request) {
 
         const response =
-
             this.createResponse();
 
-        response.action = action;
+        response.transactionId =
+            this.createTransactionId();
 
-        response.symbol = symbol;
+        response.action =
+            request.action;
+
+        response.requestedSymbol =
+            request.symbol;
+
+        response.executionType =
+            request.executionType || "MARKET";
 
         logger.info(
 
@@ -96,104 +244,131 @@ class TradeService {
 
             {
 
-                action,
+                transactionId:
+                    response.transactionId,
 
-                symbol,
+                action:
+                    request.action,
 
-                riskPercent
+                symbol:
+                    request.symbol
 
             }
 
         );
 
         /*
-        Stage 2 will continue here...
+        ======================================================
+        Validation
+        ======================================================
         */
 
-        return response;
-
-    }
-        const transactionId =
-
-            `TX-${Date.now()}-${Math.random()
-                .toString(36)
-                .substring(2, 8)
-                .toUpperCase()}`;
-
-        response.transactionId = transactionId;
+        validationService.validateTradeRequest(request);
 
         /*
-        --------------------------------------
-        Validation
-        --------------------------------------
+        ======================================================
+        AI Optimisation
+        ======================================================
         */
 
-        const validation =
+        const optimisation =
+            await this.optimiseTrade(request);
 
-            validationService.validateTrade({
+        response.confidence =
+            optimisation.confidence;
 
-                action,
+        response.warnings.push(
+            ...optimisation.warnings
+        );
 
-                volume: 1
-
-            });
-
-        response.validation = validation;
-
-        if (!validation.valid) {
+        if (!optimisation.approved) {
 
             response.message =
-
-                "Trade validation failed.";
-
-            logger.warning(
-
-                logger.SOURCES.EXECUTION,
-
-                response.message,
-
-                {
-
-                    transactionId,
-
-                    validation
-
-                }
-
-            );
+                "AI optimisation rejected trade.";
 
             return response;
 
         }
 
         /*
-        --------------------------------------
-        Position Checks
-        --------------------------------------
+        ======================================================
+        Resolve Broker Symbol
+        ======================================================
         */
 
-        if (
+        const symbol =
+            await symbolService.findSymbol(
+                request.symbol
+            );
 
-            !(await positionService.canOpenPosition())
-
-        ) {
+        if (!symbol) {
 
             throw new Error(
 
-                "Maximum number of positions reached."
+                `Unable to resolve trading symbol '${request.symbol}'.`
 
             );
 
         }
 
+        response.symbol = symbol;
+
+        /*
+        ======================================================
+        Trade Cluster
+        ======================================================
+        */
+
+        response.clusterId =
+            this.createClusterId(symbol);
+
+        /*
+        ======================================================
+        Market Snapshot
+        ======================================================
+        */
+
+        const market =
+            await marketService
+                .getMarketSnapshot(symbol);
+
+        /*
+        ======================================================
+        Account Information
+        ======================================================
+        */
+
+        const account =
+            await accountService.getAccount();
+
+        /*
+        ======================================================
+        Risk Calculation
+        ======================================================
+        */
+
+        const volume =
+            await riskService.calculateLotSize(
+
+                request.stopLoss,
+
+                market.contractSize,
+
+                optimisation.adjustments.riskPercent
+
+            );
+
+        response.volume = volume;
+
+        /*
+        ======================================================
+        Duplicate Position Check
+        ======================================================
+        */
+
         if (
-
-            await positionService.hasOpenPosition(
-
-                symbol
-
-            )
-
+            request.preventDuplicate !== false &&
+            await positionService.hasOpenPosition(symbol)
         ) {
 
             throw new Error(
@@ -205,50 +380,222 @@ class TradeService {
         }
 
         /*
-        --------------------------------------
-        Lot Size
-        --------------------------------------
+        ======================================================
+        Maximum Positions
+        ======================================================
         */
 
-        const volume =
-
-            await riskService.calculateLotSize(
-
-                stopLoss,
-
-                10,
-
-                riskPercent
-
-            );
-
-        response.volume = volume;
-
-        /*
-        --------------------------------------
-        Broker Connection
-        --------------------------------------
-        */
-
-        const connection =
-
-            brokerGateway.connection;
-
-        if (!connection) {
+        if (
+            !(await positionService.canOpenPosition())
+        ) {
 
             throw new Error(
 
-                "Broker connection unavailable."
+                "Maximum open positions reached."
 
             );
 
         }
 
-        response.execution = {
+        /*
+        ======================================================
+        Execution Lock
+        ======================================================
+        */
 
-            transactionId,
+        const lockKey = [
 
-            ready: true
+            account.login || "ACCOUNT",
+
+            symbol,
+
+            request.action
+
+        ].join(":");
+
+        return this.withExecutionLock(
+
+            lockKey,
+
+            async () => {
+
+                const connection =
+                    await metaapi.getConnection();
+
+                /*
+                ==============================================
+                Pending Order Router
+                ==============================================
+                */
+
+                if (
+                    response.executionType !==
+                    "MARKET"
+                ) {
+
+                    return {
+
+                        success: false,
+
+                        transactionId:
+                            response.transactionId,
+
+                        clusterId:
+                            response.clusterId,
+
+                        message:
+                            "Pending order framework ready. Execution will be enabled in Version 3."
+
+                    };
+
+                }
+
+                /*
+                ==============================================
+                Market Execution
+                ==============================================
+                */
+
+                let execution;
+
+                /*
+                ==============================================
+                BUY
+                ==============================================
+                */
+
+                if (request.action === "BUY") {
+
+                    execution =
+                        await connection.createMarketBuyOrder(
+
+                            symbol,
+
+                            volume,
+
+                            optimisation.adjustments.stopLoss,
+
+                            optimisation.adjustments.takeProfit,
+
+                            request.comment ||
+                            "WealthBuilder"
+
+                        );
+
+                }
+
+                /*
+                ==============================================
+                SELL
+                ==============================================
+                */
+
+                else if (request.action === "SELL") {
+
+                    execution =
+                        await connection.createMarketSellOrder(
+
+                            symbol,
+
+                            volume,
+
+                            optimisation.adjustments.stopLoss,
+
+                            optimisation.adjustments.takeProfit,
+
+                            request.comment ||
+                            "WealthBuilder"
+
+                        );
+
+                }
+
+                else {
+
+                    throw new Error(
+
+                        `Unsupported trade action '${request.action}'.`
+
+                    );
+
+                }
+
+                /*
+                ==============================================
+                Refresh Position Cache
+                ==============================================
+                */
+
+                positionService.clearCache();
+
+                /*
+                ==============================================
+                Response
+                ==============================================
+                */
+
+                response.success = true;
+
+                response.orderId =
+                    execution.orderId ||
+                    execution.id ||
+                    null;
+
+                response.positionId =
+                    execution.positionId ||
+                    null;
+
+                response.entryPrice =
+                    execution.price ||
+                    null;
+
+                response.stopLoss =
+                    optimisation.adjustments.stopLoss;
+
+                response.takeProfit =
+                    optimisation.adjustments.takeProfit;
+
+                response.executedAt =
+                    new Date().toISOString();
+
+                response.message =
+                    `${request.action} market order executed successfully.`;
+
+                logger.success(
+
+                    logger.SOURCES.EXECUTION,
+
+                    response.message,
+
+                    {
+
+                        transactionId:
+                            response.transactionId,
+
+                        clusterId:
+                            response.clusterId,
+
+                        orderId:
+                            response.orderId,
+
+                        symbol,
+
+                        volume,
+
+                        confidence:
+                            response.confidence
+
+                    }
+
+                );
+
+                return response;
+
+            }
+
+        );
+
+    }
 
     /*
     ======================================================
@@ -257,15 +604,22 @@ class TradeService {
     */
 
     async openBuy(
+
         symbol,
+
         stopLoss,
+
         takeProfit,
+
         riskPercent = 1
+
     ) {
 
         return this.executeTrade({
 
             action: "BUY",
+
+            executionType: "MARKET",
 
             symbol,
 
@@ -286,15 +640,22 @@ class TradeService {
     */
 
     async openSell(
+
         symbol,
+
         stopLoss,
+
         takeProfit,
+
         riskPercent = 1
+
     ) {
 
         return this.executeTrade({
 
             action: "SELL",
+
+            executionType: "MARKET",
 
             symbol,
 
@@ -316,73 +677,43 @@ class TradeService {
 
     async closePosition(positionId) {
 
-        const response =
-
-            this.createResponse();
+        const response = this.createResponse();
 
         try {
 
-            const connection =
-
-                brokerGateway.connection;
-
-            if (!connection) {
-
-                response.message =
-
-                    "Broker connection unavailable.";
-
-                return response;
-
-            }
+            const connection = await metaapi.getConnection();
 
             await connection.closePosition(positionId);
 
+            positionService.clearCache();
+
             response.success = true;
-
-            response.tradeId = positionId;
-
-            response.message =
-
-                "Position closed successfully.";
+            response.positionId = positionId;
+            response.executedAt = new Date().toISOString();
+            response.message = "Position closed successfully.";
 
             logger.success(
-
                 logger.SOURCES.EXECUTION,
-
                 response.message,
-
                 {
-
                     positionId
-
                 }
-
             );
 
             return response;
 
-        }
-
-        catch (err) {
-
-            response.message = err.message;
+        } catch (error) {
 
             logger.error(
-
                 logger.SOURCES.EXECUTION,
-
                 "Failed to close position.",
-
                 {
-
                     positionId,
-
-                    error: err.message
-
+                    error: error.message
                 }
-
             );
+
+            response.message = error.message;
 
             return response;
 
@@ -390,6 +721,53 @@ class TradeService {
 
     }
 
+    /*
+    ======================================================
+    Close All Positions
+    ======================================================
+    */
+
+    async closeAllPositions() {
+
+        const positions =
+            await positionService.getPositions();
+
+        const results = [];
+
+        for (const position of positions) {
+
+            results.push(
+
+                await this.closePosition(
+                    position.id
+                )
+
+            );
+
+        }
+
+        return results;
+
+    }
+
+    /*
+    ======================================================
+    Service Information
+    ======================================================
+    */
+
+    getVersion() {
+
+        return this.VERSION;
+
+    }
+
 }
 
-module.exports = new TradeService();        };
+/*
+==========================================================
+Singleton Export
+==========================================================
+*/
+
+module.exports = new TradeService();
