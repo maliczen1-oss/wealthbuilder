@@ -113,3 +113,141 @@ class TradeService {
         return response;
 
     }
+        const transactionId =
+
+            `TX-${Date.now()}-${Math.random()
+                .toString(36)
+                .substring(2, 8)
+                .toUpperCase()}`;
+
+        response.transactionId = transactionId;
+
+        /*
+        --------------------------------------
+        Validation
+        --------------------------------------
+        */
+
+        const validation =
+
+            validationService.validateTrade({
+
+                action,
+
+                volume: 1
+
+            });
+
+        response.validation = validation;
+
+        if (!validation.valid) {
+
+            response.message =
+
+                "Trade validation failed.";
+
+            logger.warning(
+
+                logger.SOURCES.EXECUTION,
+
+                response.message,
+
+                {
+
+                    transactionId,
+
+                    validation
+
+                }
+
+            );
+
+            return response;
+
+        }
+
+        /*
+        --------------------------------------
+        Position Checks
+        --------------------------------------
+        */
+
+        if (
+
+            !(await positionService.canOpenPosition())
+
+        ) {
+
+            throw new Error(
+
+                "Maximum number of positions reached."
+
+            );
+
+        }
+
+        if (
+
+            await positionService.hasOpenPosition(
+
+                symbol
+
+            )
+
+        ) {
+
+            throw new Error(
+
+                `${symbol} already has an open position.`
+
+            );
+
+        }
+
+        /*
+        --------------------------------------
+        Lot Size
+        --------------------------------------
+        */
+
+        const volume =
+
+            await riskService.calculateLotSize(
+
+                stopLoss,
+
+                10,
+
+                riskPercent
+
+            );
+
+        response.volume = volume;
+
+        /*
+        --------------------------------------
+        Broker Connection
+        --------------------------------------
+        */
+
+        const connection =
+
+            brokerGateway.connection;
+
+        if (!connection) {
+
+            throw new Error(
+
+                "Broker connection unavailable."
+
+            );
+
+        }
+
+        response.execution = {
+
+            transactionId,
+
+            ready: true
+
+        };
