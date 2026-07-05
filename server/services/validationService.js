@@ -408,3 +408,263 @@ class ValidationService {
         return result;
 
             }
+    /*
+    ======================================================
+    Risk Validation
+    ======================================================
+    */
+
+    validateRisk(risk = {}) {
+
+        const result = this.createResult();
+
+        if (risk.percentage === undefined) {
+
+            this.addError(
+                result,
+                "risk",
+                "Risk percentage missing."
+            );
+
+            return result;
+
+        }
+
+        this.addSuccess(
+            result,
+            "risk"
+        );
+
+        if (risk.percentage > 2) {
+
+            this.addWarning(
+                result,
+                "risk",
+                "Risk exceeds recommended limit."
+            );
+
+        }
+
+        return result;
+
+    }
+
+    /*
+    ======================================================
+    Strategy Validation
+    ======================================================
+    */
+
+    validateStrategy(strategy = {}) {
+
+        const result = this.createResult();
+
+        if (!strategy.name) {
+
+            this.addError(
+                result,
+                "strategy",
+                "Strategy unavailable."
+            );
+
+            return result;
+
+        }
+
+        this.addSuccess(
+            result,
+            "strategy"
+        );
+
+        return result;
+
+    }
+
+    /*
+    ======================================================
+    Trade Validation
+    ======================================================
+    */
+
+    validateTrade(trade = {}) {
+
+        const result = this.createResult();
+
+        const validActions = [
+
+            "BUY",
+            "SELL",
+            "BUY_LIMIT",
+            "SELL_LIMIT",
+            "BUY_STOP",
+            "SELL_STOP",
+            "CLOSE",
+            "HOLD"
+
+        ];
+
+        if (
+
+            !trade.action ||
+
+            !validActions.includes(trade.action)
+
+        ) {
+
+            this.addError(
+                result,
+                "action",
+                "Invalid trade action."
+            );
+
+        } else {
+
+            this.addSuccess(
+                result,
+                "action"
+            );
+
+        }
+
+        if (
+
+            trade.volume === undefined ||
+
+            trade.volume <= 0
+
+        ) {
+
+            this.addError(
+                result,
+                "volume",
+                "Invalid trade volume."
+            );
+
+        } else {
+
+            this.addSuccess(
+                result,
+                "volume"
+            );
+
+        }
+
+        return result;
+
+    }
+
+    /*
+    ======================================================
+    Complete Validation
+    ======================================================
+    */
+
+    validateAll(data = {}) {
+
+        const result = this.createResult();
+
+        const validations = [
+
+            this.validateConnection(data.connection),
+
+            this.validateBroker(data.broker),
+
+            this.validateAccount(data.account),
+
+            this.validateSymbol(data.symbol),
+
+            this.validateRisk(data.risk),
+
+            this.validateStrategy(data.strategy),
+
+            this.validateTrade(data.trade),
+
+            this.validateDecision(data.decision)
+
+        ];
+
+        validations.forEach(validation => {
+
+            result.score =
+
+                Math.min(
+
+                    result.score,
+
+                    validation.score
+
+                );
+
+            result.valid =
+
+                result.valid &&
+
+                validation.valid;
+
+            result.warnings.push(
+
+                ...validation.warnings
+
+            );
+
+            result.errors.push(
+
+                ...validation.errors
+
+            );
+
+            Object.assign(
+
+                result.checks,
+
+                validation.checks
+
+            );
+
+        });
+
+        result.severity =
+
+            result.valid
+
+                ? (
+
+                    result.warnings.length
+
+                        ? "warning"
+
+                        : "success"
+
+                )
+
+                : "critical";
+
+        if (!result.valid) {
+
+            logger.error(
+
+                logger.SOURCES.GUARDIAN,
+
+                "Validation failed.",
+
+                {
+
+                    errors: result.errors,
+
+                    warnings: result.warnings,
+
+                    score: result.score
+
+                }
+
+            );
+
+        }
+
+        return result;
+
+    }
+
+}
+
+module.exports = new ValidationService();
