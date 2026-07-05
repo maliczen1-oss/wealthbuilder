@@ -1,7 +1,7 @@
 "use strict";
 
 /*
-==========================================================
+
 WealthBuilder OS
 MetaApi Service
 
@@ -11,20 +11,28 @@ Atlas Certification : Pending
 Powered by Jarvis Intelligence
 
 Purpose
--------
+
 Centralized MetaApi lifecycle management.
 
 Responsibilities
-- Initialize MetaApi
-- Deploy account
-- Maintain RPC connection
-- Synchronize terminal
-- Expose a single connection to all services
-- Report health
-- Graceful shutdown
+
+Initialize MetaApi
+
+Deploy account
+
+Maintain RPC connection
+
+Synchronize terminal
+
+Expose a single connection to all services
+
+Report health
+
+Graceful shutdown
+
 
 Used By
--------
+
 accountService
 positionService
 symbolService
@@ -38,9 +46,9 @@ const MetaApi = require("metaapi.cloud-sdk").default;
 const logger = require("./logger");
 
 /*
-==========================================================
+
 Internal State
-==========================================================
+
 */
 
 let api = null;
@@ -51,621 +59,625 @@ let initializing = false;
 
 const state = {
 
-    initialized: false,
+initialized: false,  
 
-    connected: false,
+connected: false,  
 
-    synchronized: false,
+synchronized: false,  
 
-    retryCount: 0,
+retryCount: 0,  
 
-    lastConnected: null,
+lastConnected: null,  
 
-    lastError: null
+lastError: null
 
 };
 
 /*
-==========================================================
+
 MetaApi Service
-==========================================================
+
 */
 
 class MetaApiService {
 
-    constructor() {
+constructor() {  
 
-        this.VERSION = "3.0.0";
+    this.VERSION = "3.0.0";  
 
-    }
+}  
 
-    /*
-    ======================================================
-    Initialize
-    ======================================================
-    */
+/*  
+======================================================  
+Initialize  
+======================================================  
+*/  
 
-    async initialize(token, accountId) {
+async initialize(token, accountId) {  
 
-        if (state.initialized) {
+    if (state.initialized) {  
 
-            return connection;
+        return connection;  
 
-        }
+    }  
 
-        if (initializing) {
+    if (initializing) {  
 
-            logger.info(
+        logger.info(  
 
-                logger.SOURCES.METAAPI,
+            logger.SOURCES.METAAPI,  
 
-                "Initialization already in progress."
+            "Initialization already in progress."  
 
-            );
+        );  
 
-            return;
+        return;  
 
-        }
+    }  
 
-        initializing = true;
+    initializing = true;  
 
-        logger.info(
+    logger.info(  
 
-            logger.SOURCES.METAAPI,
+        logger.SOURCES.METAAPI,  
 
-            "Initializing MetaApi.",
+        "Initializing MetaApi.",  
 
-            {
+        {  
 
-                accountId
+            accountId  
 
-            }
+        }  
 
-        );
+    );  
 
-        try {
+    try {  
 
-            api = new MetaApi(token);
+        api = new MetaApi(token);  
 
-            account =
-                await api
-                    .metatraderAccountApi
-                    .getAccount(accountId);
+        account =  
+            await api  
+                .metatraderAccountApi  
+                .getAccount(accountId);  
 
-            if (!account) {
+        if (!account) {  
 
-                throw new Error(
-                    "MetaTrader account not found."
-                );
+            throw new Error(  
+                "MetaTrader account not found."  
+            );  
 
-            }
+        }  
 
-            logger.success(
+        logger.success(  
 
-                logger.SOURCES.METAAPI,
+            logger.SOURCES.METAAPI,  
 
-                "MetaTrader account located.",
+            "MetaTrader account located.",  
 
-                {
+            {  
 
-                    accountId,
+                accountId,  
 
-                    accountName: account.name,
+                accountName: account.name,  
 
-                    state: account.state
+                state: account.state  
 
-                }
+            }  
 
-            );
+        );  
 
-            /*
-            ==================================================
-            Deploy Account
-            ==================================================
-            */
+        /*  
+        ==================================================  
+        Deploy Account  
+        ==================================================  
+        */  
 
-            if (account.state !== "DEPLOYED") {
+        if (account.state !== "DEPLOYED") {  
 
-                logger.info(
+            logger.info(  
 
-                    logger.SOURCES.METAAPI,
+                logger.SOURCES.METAAPI,  
 
-                    "Deploying trading account."
+                "Deploying trading account."  
 
-                );
+            );  
 
-                await account.deploy();
+            await account.deploy();  
 
-            }
+        }  
 
-            logger.info(
+        logger.info(  
 
-                logger.SOURCES.METAAPI,
+            logger.SOURCES.METAAPI,  
 
-                "Waiting for broker connection."
+            "Waiting for broker connection."  
 
-            );
+        );  
 
-            await account.waitConnected();
+        await account.waitConnected();  
 
-            /*
-            ==================================================
-            RPC Connection
-            ==================================================
-            */
+        /*  
+        ==================================================  
+        RPC Connection  
+        ==================================================  
+        */  
 
-            connection =
-                account.getRPCConnection();
+        connection =  
+            account.getRPCConnection();  
 
-            await connection.connect();
+        await connection.connect();  
 
-            logger.info(
+        logger.info(  
 
-                logger.SOURCES.METAAPI,
+            logger.SOURCES.METAAPI,  
 
-                "Synchronizing terminal."
+            "Synchronizing terminal."  
 
-            );
+        );  
 
-            await connection.waitSynchronized();
+        await connection.waitSynchronized();  
 
-            state.initialized = true;
+        state.initialized = true;  
 
-            state.connected = true;
+        state.connected = true;  
 
-            state.synchronized = true;
+        state.synchronized = true;  
 
-            state.lastConnected =
-                new Date().toISOString();
+        state.lastConnected =  
+            new Date().toISOString();  
 
-            state.lastError = null;
+        state.lastError = null;  
 
-            state.retryCount = 0;
+        state.retryCount = 0;  
 
-            initializing = false;
+        initializing = false;  
 
-            logger.success(
+        logger.success(  
 
-                logger.SOURCES.METAAPI,
+            logger.SOURCES.METAAPI,  
 
-                "MetaApi synchronization complete.",
+            "MetaApi synchronization complete.",  
 
-                {
+            {  
 
-                    account: account.name
+                account: account.name  
 
-                }
+            }  
 
-            );
+        );  
 
-            return connection;
+        return connection;  
 
-        }
+    }  
 
-        catch (error) {
+    catch (error) {  
 
-            initializing = false;
+        initializing = false;  
 
-            state.initialized = false;
+        state.initialized = false;  
 
-            state.connected = false;
+        state.connected = false;  
 
-            state.synchronized = false;
+        state.synchronized = false;  
 
-            state.retryCount++;
+        state.retryCount++;  
 
-            state.lastError = error.message;
+        state.lastError = error.message;  
 
-            logger.error(
+        logger.error(  
 
-                logger.SOURCES.METAAPI,
+            logger.SOURCES.METAAPI,  
 
-                "MetaApi initialization failed.",
+            "MetaApi initialization failed.",  
 
-                {
+            {  
 
-                    retryCount: state.retryCount,
+                retryCount: state.retryCount,  
 
-                    error: error.message
+                error: error.message  
 
-                }
+            }  
 
-            );
+        );  
 
-            throw error;
+        throw error;  
 
-        }
+    }  
 
-    }    /*
-    ======================================================
-    Get RPC Connection
-    ======================================================
-    */
+}  
 
-    getConnection() {
+/*  
+======================================================  
+Get RPC Connection  
+======================================================  
+*/  
 
-        if (!connection) {
+getConnection() {  
 
-            throw new Error(
-                "MetaApi connection is not available. Call initialize() first."
-            );
+    if (!connection) {  
 
-        }
+        throw new Error(  
+            "MetaApi connection is not available. Call initialize() first."  
+        );  
 
-        return connection;
+    }  
 
-    }
+    return connection;  
 
-    /*
-    ======================================================
-    Get MetaTrader Account
-    ======================================================
-    */
+}  
 
-    getAccount() {
+/*  
+======================================================  
+Get MetaTrader Account  
+======================================================  
+*/  
 
-        if (!account) {
+getAccount() {  
 
-            throw new Error(
-                "MetaTrader account has not been initialized."
-            );
+    if (!account) {  
 
-        }
+        throw new Error(  
+            "MetaTrader account has not been initialized."  
+        );  
 
-        return account;
+    }  
 
-    }
+    return account;  
 
-    /*
-    ======================================================
-    Get MetaApi SDK
-    ======================================================
-    */
+}  
 
-    getApi() {
+/*  
+======================================================  
+Get MetaApi SDK  
+======================================================  
+*/  
 
-        return api;
+getApi() {  
 
-    }
+    return api;  
 
-    /*
-    ======================================================
-    Service State
-    ======================================================
-    */
+}  
 
-    getState() {
+/*  
+======================================================  
+Service State  
+======================================================  
+*/  
 
-        return {
+getState() {  
 
-            ...state
+    return {  
 
-        };
+        ...state  
 
-    }
+    };  
 
-    /*
-    ======================================================
-    Status Helpers
-    ======================================================
-    */
+}  
 
-    isInitialized() {
+/*  
+======================================================  
+Status Helpers  
+======================================================  
+*/  
 
-        return state.initialized;
+isInitialized() {  
 
-    }
+    return state.initialized;  
 
-    isConnected() {
+}  
 
-        return state.connected;
+isConnected() {  
 
-    }
+    return state.connected;  
 
-    isSynchronized() {
+}  
 
-        return state.synchronized;
+isSynchronized() {  
 
-    }
+    return state.synchronized;  
 
-    /*
-    ======================================================
-    Health Report
-    ======================================================
-    */
+}  
 
-    getHealth() {
+/*  
+======================================================  
+Health Report  
+======================================================  
+*/  
 
-        return {
+getHealth() {  
 
-            service: "MetaApi",
+    return {  
 
-            version: this.VERSION,
+        service: "MetaApi",  
 
-            initialized: state.initialized,
+        version: this.VERSION,  
 
-            connected: state.connected,
+        initialized: state.initialized,  
 
-            synchronized: state.synchronized,
+        connected: state.connected,  
 
-            retryCount: state.retryCount,
+        synchronized: state.synchronized,  
 
-            lastConnected: state.lastConnected,
+        retryCount: state.retryCount,  
 
-            lastError: state.lastError,
+        lastConnected: state.lastConnected,  
 
-            account: account
-                ? {
-                    id: account.id,
-                    name: account.name,
-                    state: account.state
-                }
-                : null
+        lastError: state.lastError,  
 
-        };
+        account: account  
+            ? {  
+                id: account.id,  
+                name: account.name,  
+                state: account.state  
+            }  
+            : null  
 
-    }
+    };  
 
-    /*
-    ======================================================
-    Synchronize Connection
-    ======================================================
-    */
+}  
 
-    async synchronize() {
+/*  
+======================================================  
+Synchronize Connection  
+======================================================  
+*/  
 
-        const rpc = this.getConnection();
+async synchronize() {  
 
-        logger.info(
+    const rpc = this.getConnection();  
 
-            logger.SOURCES.METAAPI,
+    logger.info(  
 
-            "Synchronizing MetaApi connection."
+        logger.SOURCES.METAAPI,  
 
-        );
+        "Synchronizing MetaApi connection."  
 
-        await rpc.waitSynchronized();
+    );  
 
-        state.connected = true;
+    await rpc.waitSynchronized();  
 
-        state.synchronized = true;
+    state.connected = true;  
 
-        state.lastConnected = new Date().toISOString();
+    state.synchronized = true;  
 
-        logger.success(
+    state.lastConnected = new Date().toISOString();  
 
-            logger.SOURCES.METAAPI,
+    logger.success(  
 
-            "Synchronization complete."
+        logger.SOURCES.METAAPI,  
 
-        );
+        "Synchronization complete."  
 
-        return true;
+    );  
 
-    }
+    return true;  
 
-    /*
-    ======================================================
-    Verify Connection
-    ======================================================
-    */
+}  
 
-    async verifyConnection() {
+/*  
+======================================================  
+Verify Connection  
+======================================================  
+*/  
 
-        if (!connection) {
+async verifyConnection() {  
 
-            return false;
+    if (!connection) {  
 
-        }
+        return false;  
 
-        try {
+    }  
 
-            await connection.getAccountInformation();
+    try {  
 
-            state.connected = true;
+        await connection.getAccountInformation();  
 
-            return true;
+        state.connected = true;  
 
-        }
+        return true;  
 
-        catch (error) {
+    }  
 
-            state.connected = false;
+    catch (error) {  
 
-            state.lastError = error.message;
+        state.connected = false;  
 
-            logger.warning(
+        state.lastError = error.message;  
 
-                logger.SOURCES.METAAPI,
+        logger.warning(  
 
-                "MetaApi connection verification failed.",
+            logger.SOURCES.METAAPI,  
 
-                {
+            "MetaApi connection verification failed.",  
 
-                    error: error.message
+            {  
 
-                }
+                error: error.message  
 
-            );
+            }  
 
-            return false;
+        );  
 
-        }
+        return false;  
 
-    }
+    }  
 
-    /*
-    ======================================================
-    Retry Counter
-    ======================================================
-    */
+}  
 
-    getRetryCount()    /*
-    ======================================================
-    Disconnect
-    ======================================================
-    */
+/*  
+======================================================  
+Retry Counter  
+======================================================  
+*/  
 
-    async disconnect() {
+getRetryCount() {  
 
-        logger.info(
+    return state.retryCount;  
 
-            logger.SOURCES.METAAPI,
+}  
 
-            "Disconnecting MetaApi service."
+/*  
+======================================================  
+Disconnect  
+======================================================  
+*/  
 
-        );
+async disconnect() {  
 
-        try {
+    logger.info(  
 
-            if (connection) {
+        logger.SOURCES.METAAPI,  
 
-                if (typeof connection.close === "function") {
+        "Disconnecting MetaApi service."  
 
-                    await connection.close();
+    );  
 
-                }
+    try {  
 
-            }
+        if (connection) {  
 
-        } catch (error) {
+            if (typeof connection.close === "function") {  
 
-            logger.warning(
+                await connection.close();  
 
-                logger.SOURCES.METAAPI,
+            }  
 
-                "Failed to close RPC connection.",
+        }  
 
-                {
+    } catch (error) {  
 
-                    error: error.message
+        logger.warning(  
 
-                }
+            logger.SOURCES.METAAPI,  
 
-            );
+            "Failed to close RPC connection.",  
 
-        }
+            {  
 
-        connection = null;
+                error: error.message  
 
-        state.connected = false;
+            }  
 
-        state.synchronized = false;
+        );  
 
-        logger.success(
+    }  
 
-            logger.SOURCES.METAAPI,
+    connection = null;  
 
-            "MetaApi disconnected."
+    state.connected = false;  
 
-        );
+    state.synchronized = false;  
 
-    }
+    logger.success(  
 
-    /*
-    ======================================================
-    Reset Service
-    ======================================================
-    */
+        logger.SOURCES.METAAPI,  
 
-    reset() {
+        "MetaApi disconnected."  
 
-        api = null;
+    );  
 
-        account = null;
+}  
 
-        connection = null;
+/*  
+======================================================  
+Reset Service  
+======================================================  
+*/  
 
-        initializing = false;
+reset() {  
 
-        state.initialized = false;
+    api = null;  
 
-        state.connected = false;
+    account = null;  
 
-        state.synchronized = false;
+    connection = null;  
 
-        state.retryCount = 0;
+    initializing = false;  
 
-        state.lastConnected = null;
+    state.initialized = false;  
 
-        state.lastError = null;
+    state.connected = false;  
 
-        logger.info(
+    state.synchronized = false;  
 
-            logger.SOURCES.METAAPI,
+    state.retryCount = 0;  
 
-            "MetaApi service reset."
+    state.lastConnected = null;  
 
-        );
+    state.lastError = null;  
 
-    }
+    logger.info(  
 
-    /*
-    ======================================================
-    Restart Service
-    ======================================================
-    */
+        logger.SOURCES.METAAPI,  
 
-    async restart(token, accountId) {
+        "MetaApi service reset."  
 
-        await this.disconnect();
+    );  
 
-        this.reset();
+}  
 
-        return this.initialize(
+/*  
+======================================================  
+Restart Service  
+======================================================  
+*/  
 
-            token,
+async restart(token, accountId) {  
 
-            accountId
+    await this.disconnect();  
 
-        );
+    this.reset();  
 
-    }
+    return this.initialize(  
 
-    /*
-    ======================================================
-    Readiness
-    ======================================================
-    */
+        token,  
 
-    isReady() {
+        accountId  
 
-        return (
+    );  
 
-            state.initialized &&
+}  
 
-            state.connected &&
+/*  
+======================================================  
+Readiness  
+======================================================  
+*/  
 
-            state.synchronized
+isReady() {  
 
-        );
+    return (  
 
-    }
+        state.initialized &&  
 
-    /*
-    ======================================================
-    Version
-    ======================================================
-    */
+        state.connected &&  
 
-    getVersion() {
+        state.synchronized  
 
-        return this.VERSION;
+    );  
 
-    }
+}  
+
+/*  
+======================================================  
+Version  
+======================================================  
+*/  
+
+getVersion() {  
+
+    return this.VERSION;  
+
+}
 
 }
 
 /*
-==========================================================
+
 Singleton Export
-==========================================================
+
 */
 
 const metaApiService = new MetaApiService();
 
-module.exports = metaApiService; {
-
-        return state.retryCount;
-
-    }
+module.exports = metaApiService;
