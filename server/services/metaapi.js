@@ -95,7 +95,7 @@ Initialize
 
 async initialize(token, accountId) {  
 
-    if (state.initialized) {  
+    if (this.isReady()) {  
 
         return connection;  
 
@@ -217,6 +217,8 @@ async initialize(token, accountId) {
 
         await connection.waitSynchronized();  
 
+        await connection.getAccountInformation();  
+
         state.initialized = true;  
 
         state.connected = true;  
@@ -292,7 +294,7 @@ Get RPC Connection
 ======================================================  
 */  
 
-getConnection() {  
+async getConnection() {  
 
     if (!connection) {  
 
@@ -424,7 +426,7 @@ Synchronize Connection
 
 async synchronize() {  
 
-    const rpc = this.getConnection();  
+    const rpc = await this.getConnection();  
 
     logger.info(  
 
@@ -534,13 +536,9 @@ async disconnect() {
 
     try {  
 
-        if (connection) {  
+        if (connection && typeof connection.close === "function") {  
 
-            if (typeof connection.close === "function") {  
-
-                await connection.close();  
-
-            }  
+            await connection.close();  
 
         }  
 
