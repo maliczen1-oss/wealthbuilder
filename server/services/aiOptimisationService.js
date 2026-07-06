@@ -249,6 +249,352 @@ class AIOptimisationService {
     ======================================================
     */
 
-    async evaluateTrade(request) {
+        async evaluateTrade(request) {
 
-        // Response 2 continues here...
+        const result = this.createResult();
+
+        /*
+        ======================================================
+        Integration Test Hook
+        ======================================================
+        */
+
+        if (request.strategy === "AI_REJECTION_TEST") {
+
+            result.approved = false;
+            result.confidence = 0;
+            result.grade = "REJECT";
+
+            result.warnings.push(
+                "Forced AI rejection for integration testing."
+            );
+
+            result.decisionReport = this.buildDecisionReport(result);
+
+            return result;
+
+        }
+
+        logger.info(
+
+            logger.SOURCES.AI,
+
+            "AI trade evaluation started.",
+
+            {
+
+                symbol: request.symbol,
+
+                action: request.action
+
+            }
+
+        );
+
+        /*
+        ======================================================
+        Account & Market Information
+        ======================================================
+        */
+
+        const account =
+            await accountService.getAccount();
+
+        const market =
+            await marketService.getMarketSnapshot(
+                request.symbol
+            );
+
+        result.analysis.accountRisk =
+            account.marginLevel;
+
+        /*
+        ======================================================
+        Trend Analysis
+        ======================================================
+        */
+
+        if (market.bid > market.ask) {
+
+            result.analysis.trend = "UNKNOWN";
+
+            result.warnings.push(
+                "Market data appears inconsistent."
+            );
+
+            result.confidence -= 20;
+
+        }
+
+        else {
+
+            result.analysis.trend = "VALID";
+
+            result.score += 20;
+
+        }
+
+        /*
+        ======================================================
+        Spread Analysis
+        ======================================================
+        */
+
+        const spreadPercent =
+
+            market.spread /
+
+            Math.max(market.bid, 1);
+
+        result.analysis.spread = spreadPercent;
+
+        if (spreadPercent > CONFIG.MAX_SPREAD_PERCENT) {
+
+            result.warnings.push(
+                "Spread is above preferred threshold."
+            );
+
+            result.confidence -= 10;
+
+        }
+
+        else {
+
+            result.score += 20;
+
+        }
+
+        /*
+        ======================================================
+        Volatility Analysis
+        ======================================================
+        */
+
+        const volatility =
+
+            Math.abs(
+
+                market.ask -
+
+                market.bid
+
+            )
+
+            /
+
+            Math.max(market.bid, 1)
+
+            * 100;
+
+        result.analysis.volatility = volatility;
+
+        if (volatility > CONFIG.HIGH_VOLATILITY_PERCENT) {
+
+            result.warnings.push(
+                "High market volatility detected."
+            );
+
+            result.adjustments.riskPercent = 0.50;
+
+            result.confidence -= 15;
+
+        }
+
+        else if (volatility < CONFIG.LOW_VOLATILITY_PERCENT) {
+
+            result.warnings.push(
+                "Very low volatility."
+            );
+
+            result.adjustments.riskPercent = 0.75;
+
+            result.confidence -= 5;
+
+        }
+
+        else {
+
+            result.score += 20;
+
+        }
+
+        /*
+        ======================================================
+        Session Evaluation
+        ======================================================
+        */
+
+        const hour =
+            new Date().getUTCHours();
+
+        let session = "OFF";
+
+        if (hour >= 7 && hour < 16) {
+
+            session = "LONDON";
+
+            result.score += 20;
+
+        }
+
+        else if (hour >= 12 && hour < 21) {
+
+            session = "NEW_YORK";
+
+            result.score += 20;
+
+        }
+
+        else {
+
+            result.warnings.push(
+                "Outside preferred trading sessions."
+            );
+
+            result.confidence -= 10;
+
+        }
+
+        result.analysis.session = session;
+
+        /*
+        ======================================================
+        Margin Assessment
+        ======================================================
+        */
+
+        if (
+
+            account.marginLevel &&
+
+            account.marginLevel < 150
+
+        ) {
+
+            result.warnings.push(
+                "Low margin level."
+            );
+
+            result.adjustments.riskPercent = Math.min(
+
+                result.adjustments.riskPercent,
+
+                0.50
+
+            );
+
+            result.confidence -= 20;
+
+        }
+
+        /*
+        ======================================================
+        Confidence Clamp
+        ======================================================
+        */
+
+        result.confidence = Math.max(
+
+            0,
+
+            Math.min(
+
+                CONFIG.MAX_CONFIDENCE,
+
+                result.confidence
+
+            )
+
+        );
+
+        result.approved =
+
+            result.confidence >=
+
+            CONFIG.MIN_CONFIDENCE;
+
+        /*
+        ======================================================
+        Trade Grade
+        ======================================================
+        */
+
+        result.grade =
+
+            this.calculateTradeGrade(
+
+                result.confidence
+
+            );
+
+        /*
+        ======================================================
+        Explainable AI
+        ======================================================
+        */
+
+        result.decisionReport =
+
+            this.buildDecisionReport(
+
+                result
+
+            );
+
+        /*
+        ======================================================
+        Final Risk Adjustment
+        ======================================================
+        */
+
+        if (
+
+            result.approved &&
+
+            request.riskPercent
+
+        ) {
+
+            result.adjustments.riskPercent =
+
+                Math.min(
+
+                    request.riskPercent,
+
+                    result.adjustments.riskPercent
+
+                );
+
+        }
+
+        result.adjustments.stopLoss =
+
+            request.stopLoss ?? null;
+
+        result.adjustments.takeProfit =
+
+            request.takeProfit ?? null;
+
+        logger.info(
+
+            logger.SOURCES.AI,
+
+            "AI evaluation completed.",
+
+            {
+
+                confidence: result.confidence,
+
+                grade: result.grade,
+
+                approved: result.approved,
+
+                score: result.score
+
+            }
+
+        );
+
+        return result;
+
+    }
