@@ -495,7 +495,61 @@ evaluateLiquidity(session, spreadPercent) {
         }
 
         result.analysis.session = session;
+/*
+======================================================
+Liquidity Analysis
+======================================================
+*/
 
+const liquidity =
+
+    this.evaluateLiquidity(
+
+        session,
+
+        spreadPercent
+
+    );
+
+result.analysis.liquidity =
+
+    liquidity.status;
+
+result.confidence +=
+
+    liquidity.confidenceAdjustment;
+
+if (liquidity.warning) {
+
+    result.warnings.push(
+
+        liquidity.warning
+
+    );
+
+}
+
+switch (liquidity.status) {
+
+    case "HIGH":
+
+        result.score += 10;
+
+        break;
+
+    case "MEDIUM":
+
+        result.score += 5;
+
+        break;
+
+    case "LOW":
+
+        result.score -= 10;
+
+        break;
+
+}
         /*
         ======================================================
         Margin Assessment
