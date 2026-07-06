@@ -23,7 +23,7 @@ console.log("");
 
 require("./helpers/testEnvironment")
     .initialize()
-    .then(() => {
+    .then(async () => {
 
         console.log("Environment Ready");
 
