@@ -17,7 +17,7 @@ Central orchestration engine for automated trading.
 Responsibilities
 ----------------
 ✓ Start / Stop automation
-✓ Pause / Resume automation
+✓ Pause /Resume automation
 ✓ Session management
 ✓ Strategy execution
 ✓ Trading readiness
@@ -34,6 +34,7 @@ const tradeService = require("./tradeService");
 const accountService = require("./accountService");
 const positionService = require("./positionService");
 const marketService = require("./marketService");
+const pendingOrderService = require("./pendingOrderService");
 
 /*
 ==========================================================
@@ -374,6 +375,32 @@ class AutomationEngine {
 
         }
 
+        const executionType =
+            strategy.executionType || "MARKET";
+
+        logger.info(
+
+            logger.SOURCES.AUTOMATION,
+
+            "Executing strategy.",
+
+            {
+
+                strategy:
+                    state.currentStrategy,
+
+                executionType,
+
+                action:
+                    strategy.action,
+
+                symbol:
+                    strategy.symbol
+
+            }
+
+        );
+
         const positions =
             await positionService.getPositionCount();
 
@@ -428,10 +455,27 @@ class AutomationEngine {
 
         let result;
 
-        if (strategy.action === "BUY") {
+        if (executionType === "MARKET") {
 
-            result =
-                await tradeService.openBuy(
+            if (strategy.action === "BUY") {
+
+                result = await tradeService.openBuy(
+
+                    strategy.symbol,
+
+                    strategy.stopLoss,
+
+                    strategy.takeProfit,
+
+                    strategy.riskPercent
+
+                );
+
+            }
+
+            else if (strategy.action === "SELL") {
+
+                result = await tradeService.openSell(
 
                     strategy.symbol,
 
@@ -443,36 +487,32 @@ class AutomationEngine {
 
                 );
 
-        }
+            }
 
-        else if (
-            strategy.action === "SELL"
-        ) {
+            else {
 
-            result =
-                await tradeService.openSell(
+                return {
 
-                    strategy.symbol,
+                    success: false,
 
-                    strategy.stopLoss,
+                    message:
 
-                    strategy.takeProfit,
+                        `Unsupported market action '${strategy.action}'.`
 
-                    strategy.riskPercent
+                };
 
-                );
+            }
 
         }
 
         else {
 
+            // For other execution types (LIMIT, STOP, etc.) we may route
+            // to the pendingOrderService in future patches. For now,
+            // return unsupported executionType.
             return {
-
                 success: false,
-
-                message:
-                    "Unsupported strategy action."
-
+                message: `Unsupported execution type '${executionType}'.`
             };
 
         }
