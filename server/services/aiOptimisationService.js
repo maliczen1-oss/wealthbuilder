@@ -111,7 +111,15 @@ class AIOptimisationService {
 
             warnings: [],
 
-            analysis: {
+/*
+======================================================
+Confidence Breakdown
+======================================================
+*/
+
+confidenceBreakdown: [],
+
+analysis: {
 
     trend: null,
 
@@ -125,7 +133,7 @@ class AIOptimisationService {
 
     accountRisk: null
 
-            },
+},
 
             decisionReport: {
 
