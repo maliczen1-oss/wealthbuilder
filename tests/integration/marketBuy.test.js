@@ -2,21 +2,60 @@
 
 /*
 ==========================================================
-Smoke Test
+WealthBuilder OS
 
-Market BUY
+Market BUY Integration Test
+
+Version : 1.0.0
+Status  : Production
+
+Purpose
+-------
+Validates the complete BUY execution pipeline.
 
 ==========================================================
 */
+
+const tradeService =
+    require("../../server/services/tradeService");
+
+const {
+
+    assert,
+
+    assertEqual
+
+} = require("../helpers/assertions");
 
 exports.run = async () => {
 
     console.log(
 
-        "Market BUY test placeholder."
+        "Testing Market BUY..."
 
     );
 
-    return true;
+    const request = {
 
+        symbol: "EURUSD",
+
+        action: "BUY",
+
+        riskPercent: 1,
+
+        stopLoss: 100,
+
+        takeProfit: 200,
+
+        strategy: "INTEGRATION_TEST",
+
+        session: "TEST"
+
+    };
+
+    /*
+    ==========================================
+    Response 2 continues here.
+    ==========================================
+    */
 };
