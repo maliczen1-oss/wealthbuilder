@@ -185,10 +185,81 @@ exports.run = async () => {
 
     );
 
-    /*
+        /*
     ======================================================
-    Response 3 continues here.
+    Verify Trade Cluster
     ======================================================
     */
+
+    const tradeClusterService =
+        require("../../server/services/tradeClusterService");
+
+    const cluster =
+
+        tradeClusterService.getCluster(
+
+            response.clusterId
+
+        );
+
+    assert(
+
+        cluster,
+
+        "Trade cluster not found."
+
+    );
+
+    assert(
+
+        cluster.trades.length > 0,
+
+        "Trade was not registered inside the cluster."
+
+    );
+
+    assertEqual(
+
+        cluster.symbol,
+
+        request.symbol,
+
+        "Cluster symbol mismatch."
+
+    );
+
+    assertEqual(
+
+        cluster.strategy,
+
+        request.strategy,
+
+        "Cluster strategy mismatch."
+
+    );
+
+    assertEqual(
+
+        cluster.direction,
+
+        request.action,
+
+        "Cluster direction mismatch."
+
+    );
+
+    console.log(
+
+        `Cluster contains ${cluster.trades.length} trade(s).`
+
+    );
+
+    console.log(
+
+        "Market SELL integration test passed."
+
+    );
+
+    return true;
 
 };
