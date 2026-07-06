@@ -113,15 +113,17 @@ class AIOptimisationService {
 
             analysis: {
 
-                trend: null,
+    trend: null,
 
-                volatility: null,
+    volatility: null,
 
-                spread: null,
+    spread: null,
 
-                session: null,
+    session: null,
 
-                accountRisk: null
+    liquidity: null,
+
+    accountRisk: null
 
             },
 
