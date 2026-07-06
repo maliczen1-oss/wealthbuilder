@@ -137,10 +137,68 @@ exports.run = async () => {
 
     );
 
-    /*
+        /*
     ======================================================
-    Response 3 continues here.
+    Verify No Execution Occurred
     ======================================================
     */
+
+    assert(
+
+        !response.orderId,
+
+        "Rejected trade should not create an order."
+
+    );
+
+    assert(
+
+        !response.positionId,
+
+        "Rejected trade should not create a position."
+
+    );
+
+    assert(
+
+        !response.clusterId,
+
+        "Rejected trade should not create a trade cluster."
+
+    );
+
+    assert(
+
+        !response.executedAt,
+
+        "Rejected trade should not have an execution timestamp."
+
+    );
+
+    console.log(
+
+        "No MetaApi execution occurred."
+
+    );
+
+    console.log(
+
+        "No position was opened."
+
+    );
+
+    console.log(
+
+        "No trade cluster was created."
+
+    );
+
+    console.log(
+
+        "AI rejection integration test passed."
+
+    );
+
+    return true;
 
 };
