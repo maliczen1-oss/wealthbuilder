@@ -60,7 +60,13 @@ const state = {
 
     dailyProfit: 0,
 
-    dailyLoss: 0
+    dailyLoss: 0,
+
+    statistics: {
+        executions: 0,
+        successful: 0,
+        failed: 0
+    }
 
 };
 
@@ -505,11 +511,54 @@ class AutomationEngine {
 
         }
 
+        else if (
+
+            [
+
+                "BUY_LIMIT",
+
+                "SELL_LIMIT",
+
+                "BUY_STOP",
+
+                "SELL_STOP"
+
+            ].includes(executionType)
+
+        ) {
+
+            result = await pendingOrderService.placePendingOrder({
+
+                orderType: executionType,
+
+                symbol: strategy.symbol,
+
+                volume: strategy.volume,
+
+                entryPrice: strategy.entryPrice,
+
+                stopLoss: strategy.stopLoss,
+
+                takeProfit: strategy.takeProfit,
+
+                riskPercent: strategy.riskPercent,
+
+                strategy: strategy.name,
+
+                session: strategy.session,
+
+                comment:
+
+                    strategy.comment ||
+
+                    "WealthBuilder Automation"
+
+            });
+
+        }
+
         else {
 
-            // For other execution types (LIMIT, STOP, etc.) we may route
-            // to the pendingOrderService in future patches. For now,
-            // return unsupported executionType.
             return {
                 success: false,
                 message: `Unsupported execution type '${executionType}'.`
@@ -518,34 +567,44 @@ class AutomationEngine {
         }
 
         /*
-        ==============================================
+        ======================================================
         Statistics
-        ==============================================
+        ======================================================
         */
 
-        state.executionCount++;
+        state.statistics.executions++;
 
-        state.lastExecution =
-            new Date().toISOString();
+        if (result && result.success) {
+
+            state.statistics.successful++;
+
+        }
+
+        else {
+
+            state.statistics.failed++;
+
+        }
+
+        // keep lastExecution timestamp for visibility
+        state.lastExecution = new Date().toISOString();
 
         logger.success(
 
             logger.SOURCES.AUTOMATION,
 
-            "Strategy executed.",
+            "Strategy execution completed.",
 
             {
 
                 strategy:
+
                     state.currentStrategy,
 
-                symbol:
-                    strategy.symbol,
-
-                action:
-                    strategy.action,
+                executionType,
 
                 success:
+
                     result.success
 
             }
@@ -611,6 +670,12 @@ class AutomationEngine {
 
         state.lastExecution = null;
 
+        state.statistics = {
+            executions: 0,
+            successful: 0,
+            failed: 0
+        };
+
         logger.info(
 
             logger.SOURCES.AUTOMATION,
@@ -647,6 +712,12 @@ class AutomationEngine {
 
         state.dailyLoss = 0;
 
+        state.statistics = {
+            executions: 0,
+            successful: 0,
+            failed: 0
+        };
+
         logger.info(
 
             logger.SOURCES.AUTOMATION,
@@ -668,6 +739,138 @@ class AutomationEngine {
     getVersion() {
 
         return this.VERSION;
+
+    }
+
+    /*
+    ======================================================
+    Supported Execution Types
+    ======================================================
+    */
+
+    getSupportedExecutionTypes() {
+
+        return [
+
+            "MARKET",
+
+            "BUY_LIMIT",
+
+            "SELL_LIMIT",
+
+            "BUY_STOP",
+
+            "SELL_STOP"
+
+        ];
+
+    }
+
+    /*
+    ======================================================
+    Automation Health
+    ======================================================
+    */
+
+    getHealth() {
+
+        return {
+
+            service: "AutomationEngine",
+
+            version: this.VERSION,
+
+            status:
+
+                state.running
+                    ? "RUNNING"
+                    : "STOPPED",
+
+            paused:
+
+                state.paused,
+
+            emergencyStop:
+
+                state.emergencyStop,
+
+            currentStrategy:
+
+                state.currentStrategy,
+
+            supportedExecutionTypes:
+
+                this.getSupportedExecutionTypes(),
+
+            statistics: {
+
+                ...state.statistics
+
+            }
+
+        };
+
+    }
+
+    /*
+    ======================================================
+    Execute Safe
+    ======================================================
+    */
+
+    async executeStrategySafe(strategy) {
+
+        try {
+
+            return await this.executeStrategy(
+
+                strategy
+
+            );
+
+        }
+
+        catch (error) {
+
+            state.statistics.failed++;
+
+            logger.error(
+
+                logger.SOURCES.AUTOMATION,
+
+                "Strategy execution failed.",
+
+                {
+
+                    strategy:
+
+                        strategy?.name ||
+
+                        "UNKNOWN",
+
+                    executionType:
+
+                        strategy?.executionType ||
+
+                        "MARKET",
+
+                    error:
+
+                        error.message
+
+                }
+
+            );
+
+            return {
+
+                success: false,
+
+                message: error.message
+
+            };
+
+        }
 
     }
 
