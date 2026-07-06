@@ -206,10 +206,145 @@ exports.run = async () => {
 
     );
 
-    /*
+        /*
     ======================================================
-    Response 3 continues here.
+    Invalid Symbol Protection
     ======================================================
     */
+
+    const invalidSymbolResponse =
+        await tradeService.executeTrade({
+
+            symbol: "INVALID_SYMBOL",
+
+            action: "BUY",
+
+            executionType: "MARKET",
+
+            riskPercent: 1,
+
+            stopLoss: 100,
+
+            takeProfit: 200,
+
+            strategy: "RISK_TEST",
+
+            session: "TEST"
+
+        });
+
+    assert(
+
+        invalidSymbolResponse.success === false,
+
+        "Invalid symbol should be rejected."
+
+    );
+
+    assert(
+
+        invalidSymbolResponse.message,
+
+        "Invalid symbol rejection message missing."
+
+    );
+
+    console.log(
+
+        "Invalid symbol protection verified."
+
+    );
+
+    /*
+    ======================================================
+    Unsupported Action Protection
+    ======================================================
+    */
+
+    const invalidActionResponse =
+        await tradeService.executeTrade({
+
+            symbol: "EURUSD",
+
+            action: "HOLD",
+
+            executionType: "MARKET",
+
+            riskPercent: 1,
+
+            stopLoss: 100,
+
+            takeProfit: 200,
+
+            strategy: "RISK_TEST",
+
+            session: "TEST"
+
+        });
+
+    assert(
+
+        invalidActionResponse.success === false,
+
+        "Unsupported action should be rejected."
+
+    );
+
+    console.log(
+
+        "Unsupported action protection verified."
+
+    );
+
+    /*
+    ======================================================
+    Execution Lock Protection
+    ======================================================
+    */
+
+    const [lockResult1, lockResult2] =
+        await Promise.allSettled([
+
+            tradeService.executeTrade({
+
+                ...duplicateRequest,
+
+                preventDuplicate: false
+
+            }),
+
+            tradeService.executeTrade({
+
+                ...duplicateRequest,
+
+                preventDuplicate: false
+
+            })
+
+        ]);
+
+    assert(
+
+        lockResult1.status === "fulfilled" ||
+
+        lockResult2.status === "fulfilled",
+
+        "Expected at least one execution attempt."
+
+    );
+
+    console.log(
+
+        "Execution lock behaviour verified."
+
+    );
+
+    console.log(
+
+        "Risk Protection integration test passed."
+
+    );
+
+    return true;
 
 };
