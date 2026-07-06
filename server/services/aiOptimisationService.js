@@ -86,14 +86,22 @@ class AIOptimisationService {
 
         return {
 
-            approved: true,
+    approved: true,
 
-            confidence:
-                CONFIG.DEFAULT_CONFIDENCE,
+    confidence:
+        CONFIG.DEFAULT_CONFIDENCE,
 
-            score: 0,
+    /*
+    ======================================================
+    Trade Quality
+    ======================================================
+    */
 
-            adjustments: {
+    grade: null,
+
+    score: 0,
+
+    adjustments: {
 
                 riskPercent: 1,
 
