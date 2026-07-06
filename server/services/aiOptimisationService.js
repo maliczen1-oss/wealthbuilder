@@ -244,7 +244,44 @@ class AIOptimisationService {
         return report;
 
     }
+/*
+======================================================
+Liquidity Analysis
+======================================================
+*/
 
+evaluateLiquidity(session, spreadPercent) {
+
+    if (
+        (session === "LONDON" || session === "NEW_YORK") &&
+        spreadPercent <= CONFIG.MAX_SPREAD_PERCENT
+    ) {
+
+        return {
+            status: "HIGH",
+            confidenceAdjustment: 5,
+            warning: null
+        };
+
+    }
+
+    if (spreadPercent > CONFIG.MAX_SPREAD_PERCENT) {
+
+        return {
+            status: "LOW",
+            confidenceAdjustment: -10,
+            warning: "Low market liquidity detected."
+        };
+
+    }
+
+    return {
+        status: "MEDIUM",
+        confidenceAdjustment: 0,
+        warning: null
+    };
+
+                }
     /*
     ======================================================
     Evaluate Trade
