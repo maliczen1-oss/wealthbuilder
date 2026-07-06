@@ -413,6 +413,16 @@ result.confidenceBreakdown.push({
 
             result.confidence -= 10;
 
+result.confidenceBreakdown.push({
+
+    factor: "Spread",
+
+    adjustment: -10,
+
+    reason: "Spread above preferred threshold."
+
+});
+
         }
 
         else {
