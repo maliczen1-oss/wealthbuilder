@@ -147,10 +147,54 @@ exports.run = async () => {
 
     );
 
-    /*
+        /*
     ======================================================
-    Response 3 continues here.
+    Verify Framework State
     ======================================================
     */
+
+    assert(
+
+        !response.orderId,
+
+        "Pending framework should not return an order ID."
+
+    );
+
+    assert(
+
+        !response.positionId,
+
+        "Pending framework should not return a position ID."
+
+    );
+
+    assert(
+
+        !response.clusterId,
+
+        "Pending framework should not create a trade cluster."
+
+    );
+
+    console.log(
+
+        "No market execution occurred."
+
+    );
+
+    console.log(
+
+        "No trade cluster created."
+
+    );
+
+    console.log(
+
+        "Pending order framework test passed."
+
+    );
+
+    return true;
 
 };
