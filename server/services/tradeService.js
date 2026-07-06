@@ -158,28 +158,7 @@ class TradeService {
 
     async optimiseTrade(request) {
 
-        return {
-
-            approved: true,
-
-            confidence: 80,
-
-            adjustments: {
-
-                riskPercent:
-                    request.riskPercent,
-
-                stopLoss:
-                    request.stopLoss,
-
-                takeProfit:
-                    request.takeProfit
-
-            },
-
-            warnings: []
-
-        };
+        return aiOptimisationService.evaluateTrade(request);
 
     }
 
@@ -562,6 +541,26 @@ class TradeService {
 
                 response.message =
                     `${request.action} market order executed successfully.`;
+
+                /*
+                ==============================================
+                Register Successful Trade
+                ==============================================
+                */
+
+                const cluster = tradeClusterService.createCluster({
+                    symbol,
+                    strategy: request.strategy || "DEFAULT",
+                    session: request.session || "UNKNOWN",
+                    direction: request.action
+                });
+
+                tradeClusterService.addTrade(cluster.id, {
+                    positionId: response.positionId || response.orderId,
+                    entryPrice: response.entryPrice,
+                    volume,
+                    profit: 0
+                });
 
                 logger.success(
 
