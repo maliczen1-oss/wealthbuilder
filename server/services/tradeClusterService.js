@@ -196,6 +196,116 @@ class TradeClusterService {
 
     /*
     ======================================================
+    Find Matching Open Cluster
+    ======================================================
+    */
+
+    findOpenCluster({
+
+        symbol,
+
+        strategy = "DEFAULT",
+
+        session = "UNKNOWN",
+
+        direction = "UNKNOWN"
+
+    }) {
+
+        const today = new Date()
+            .toISOString()
+            .substring(0, 10);
+
+        for (const cluster of clusters.values()) {
+
+            if (cluster.status !== "OPEN") {
+
+                continue;
+
+            }
+
+            if (cluster.symbol !== symbol) {
+
+                continue;
+
+            }
+
+            if (cluster.strategy !== strategy) {
+
+                continue;
+
+            }
+
+            if (cluster.session !== session) {
+
+                continue;
+
+            }
+
+            if (cluster.direction !== direction) {
+
+                continue;
+
+            }
+
+            const clusterDate =
+                cluster.createdAt.substring(0, 10);
+
+            if (clusterDate !== today) {
+
+                continue;
+
+            }
+
+            return cluster;
+
+        }
+
+        return null;
+
+    }
+
+    /*
+    ======================================================
+    Get Or Create Cluster
+    ======================================================
+    */
+
+    getOrCreateCluster(options) {
+
+        const existing =
+            this.findOpenCluster(options);
+
+        if (existing) {
+
+            logger.info(
+
+                logger.SOURCES.CLUSTER,
+
+                "Existing trade cluster reused.",
+
+                {
+
+                    clusterId: existing.id,
+
+                    symbol: existing.symbol,
+
+                    strategy: existing.strategy
+
+                }
+
+            );
+
+            return existing;
+
+        }
+
+        return this.createCluster(options);
+
+    }
+
+    /*
+    ======================================================
     All Clusters
     ======================================================
     */
