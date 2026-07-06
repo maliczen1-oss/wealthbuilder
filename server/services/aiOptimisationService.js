@@ -82,7 +82,27 @@ class AIOptimisationService {
     ======================================================
     */
 
-    createResult() {
+    createResult() /*
+======================================================
+Trade Grade
+======================================================
+*/
+
+calculateTradeGrade(confidence) {
+
+    if (confidence >= 95) return "A+";
+
+    if (confidence >= 90) return "A";
+
+    if (confidence >= 85) return "B+";
+
+    if (confidence >= 80) return "B";
+
+    if (confidence >= 70) return "C";
+
+    return "REJECT";
+
+} {
 
         return {
 
