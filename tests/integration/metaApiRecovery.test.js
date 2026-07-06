@@ -55,9 +55,95 @@ exports.run = async () => {
 
     );
 
+        /*
+    ======================================================
+    Verify Connection Before Recovery
+    ======================================================
+    */
+
+    const initialConnection =
+
+        await metaapi.getConnection();
+
+    assert(
+
+        initialConnection,
+
+        "Initial MetaApi connection unavailable."
+
+    );
+
     /*
     ======================================================
-    Response 2 continues here.
+    Trigger / Verify Recovery
+    ======================================================
+    */
+
+    if (typeof metaapi.initialize === "function") {
+
+        await metaapi.initialize();
+
+    }
+
+    const recoveredConnection =
+
+        await metaapi.getConnection();
+
+    assert(
+
+        recoveredConnection,
+
+        "MetaApi connection not restored."
+
+    );
+
+    /*
+    ======================================================
+    Verify Trading Still Works
+    ======================================================
+    */
+
+    const response =
+
+        await tradeService.executeTrade({
+
+            symbol: "EURUSD",
+
+            action: "BUY",
+
+            executionType: "MARKET",
+
+            riskPercent: 1,
+
+            stopLoss: 100,
+
+            takeProfit: 200,
+
+            strategy: "METAAPI_RECOVERY_TEST",
+
+            session: "TEST",
+
+            comment: "Recovery Integration Test"
+
+        });
+
+    assert(
+
+        response.success,
+
+        "Trading unavailable after recovery."
+
+    );
+
+    console.log(
+
+        "MetaApi recovery verified."
+
+    );
+
+    /*
+    ======================================================
+    Response 3 continues here.
     ======================================================
     */
 
