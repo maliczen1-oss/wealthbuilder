@@ -65,9 +65,81 @@ exports.run = async () => {
 
     };
 
+        const response =
+
+        await tradeService.executeTrade(
+
+            request
+
+        );
+
     /*
     ======================================================
-    Response 2 continues here.
+    Validate AI Rejection
+    ======================================================
+    */
+
+    assert(
+
+        response,
+
+        "Trade service returned no response."
+
+    );
+
+    assertEqual(
+
+        typeof response.success,
+
+        "boolean",
+
+        "Response.success should be boolean."
+
+    );
+
+    assert(
+
+        response.success === false,
+
+        "AI should reject this trade."
+
+    );
+
+    assert(
+
+        response.message,
+
+        "Rejection reason missing."
+
+    );
+
+    assertEqual(
+
+        response.message,
+
+        "AI optimisation rejected trade.",
+
+        "Unexpected rejection message."
+
+    );
+
+    assert(
+
+        response.transactionId,
+
+        "Transaction ID missing."
+
+    );
+
+    console.log(
+
+        "AI correctly rejected the trade."
+
+    );
+
+    /*
+    ======================================================
+    Response 3 continues here.
     ======================================================
     */
 
