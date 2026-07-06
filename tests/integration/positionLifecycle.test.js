@@ -96,7 +96,6 @@ exports.run = async () => {
 
     );
 
-};
     assert(
 
         openResponse.clusterId,
