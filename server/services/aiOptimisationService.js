@@ -134,6 +134,26 @@ class AIOptimisationService {
         const result =
             this.createResult();
 
+        /*
+        ======================================================
+        Test Hook: Deterministic Rejection for Integration Tests
+        ======================================================
+        */
+
+        if (request.strategy === "AI_REJECTION_TEST") {
+
+            result.approved = false;
+
+            result.confidence = 0;
+
+            result.warnings.push(
+                "Forced AI rejection for integration testing."
+            );
+
+            return result;
+
+        }
+
         logger.info(
 
             logger.SOURCES.AI,
