@@ -548,19 +548,49 @@ class TradeService {
                 ==============================================
                 */
 
-                const cluster = tradeClusterService.createCluster({
+                const cluster = tradeClusterService.getOrCreateCluster({
+
                     symbol,
-                    strategy: request.strategy || "DEFAULT",
-                    session: request.session || "UNKNOWN",
-                    direction: request.action
+
+                    strategy:
+
+                        request.strategy || "DEFAULT",
+
+                    session:
+
+                        request.session || "UNKNOWN",
+
+                    direction:
+
+                        request.action
+
                 });
 
-                tradeClusterService.addTrade(cluster.id, {
-                    positionId: response.positionId || response.orderId,
-                    entryPrice: response.entryPrice,
-                    volume,
-                    profit: 0
-                });
+                tradeClusterService.addTrade(
+
+                    cluster.id,
+
+                    {
+
+                        positionId:
+
+                            response.positionId ||
+
+                            response.orderId,
+
+                        entryPrice:
+
+                            response.entryPrice,
+
+                        volume,
+
+                        profit: 0
+
+                    }
+
+                );
+
+                response.clusterId = cluster.id;
 
                 logger.success(
 
