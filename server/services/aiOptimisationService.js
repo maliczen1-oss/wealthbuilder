@@ -89,7 +89,88 @@ Trade Grade
 */
 
 calculateTradeGrade(confidence) {
+/*
+======================================================
+Decision Report
+======================================================
+*/
 
+buildDecisionReport(result) {
+
+    const report = {
+
+        summary: "",
+
+        strengths: [],
+
+        risks: [],
+
+        recommendations: []
+
+    };
+
+    if (result.analysis.trend === "VALID") {
+
+        report.strengths.push(
+            "Market structure appears valid."
+        );
+
+    }
+
+    if (
+        result.analysis.session === "LONDON" ||
+        result.analysis.session === "NEW_YORK"
+    ) {
+
+        report.strengths.push(
+            `Trading during the ${result.analysis.session} session.`
+        );
+
+    }
+
+    if (result.analysis.accountRisk >= 150) {
+
+        report.strengths.push(
+            "Healthy account margin level."
+        );
+
+    }
+
+    for (const warning of result.warnings) {
+
+        report.risks.push(warning);
+
+    }
+
+    if (result.adjustments.riskPercent < 1) {
+
+        report.recommendations.push(
+
+            `Risk reduced to ${result.adjustments.riskPercent}% due to market conditions.`
+
+        );
+
+    }
+
+    if (!result.approved) {
+
+        report.recommendations.push(
+            "Wait for stronger market conditions before entering."
+        );
+
+    }
+
+    report.summary =
+
+        result.approved
+
+            ? `Trade approved with ${result.confidence}% confidence (${result.grade}).`
+
+            : `Trade rejected with ${result.confidence}% confidence.`;
+
+    return report;
+
+}
     if (confidence >= 95) return "A+";
 
     if (confidence >= 90) return "A";
