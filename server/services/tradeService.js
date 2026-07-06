@@ -48,6 +48,8 @@ const positionService = require("./positionService");
 const symbolService = require("./symbolService");
 const marketService = require("./marketService");
 const riskService = require("./riskService");
+const aiOptimisationService = require("./aiOptimisationService");
+const tradeClusterService = require("./tradeClusterService");
 
 /*
 ==========================================================
