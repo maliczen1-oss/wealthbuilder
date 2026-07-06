@@ -163,9 +163,87 @@ exports.run = async () => {
 
     );
 
-    /*
+        /*
     ======================================================
-    Response 3 continues here.
+    Verify Shared Cluster
     ======================================================
     */
+
+    const cluster =
+
+        tradeClusterService.getCluster(
+
+            firstResponse.clusterId
+
+        );
+
+    assert(
+
+        cluster,
+
+        "Shared cluster not found."
+
+    );
+
+    assertEqual(
+
+        cluster.id,
+
+        firstResponse.clusterId,
+
+        "Cluster ID mismatch."
+
+    );
+
+    assertEqual(
+
+        cluster.symbol,
+
+        request.symbol,
+
+        "Cluster symbol mismatch."
+
+    );
+
+    assertEqual(
+
+        cluster.strategy,
+
+        request.strategy,
+
+        "Cluster strategy mismatch."
+
+    );
+
+    assertEqual(
+
+        cluster.direction,
+
+        request.action,
+
+        "Cluster direction mismatch."
+
+    );
+
+    assert(
+
+        cluster.trades.length === 3,
+
+        `Expected 3 trades, found ${cluster.trades.length}.`
+
+    );
+
+    console.log(
+
+        `Cluster ${cluster.id} contains ${cluster.trades.length} trade(s).`
+
+    );
+
+    console.log(
+
+        "Smart Cluster Reuse integration test passed."
+
+    );
+
+    return true;
 };
