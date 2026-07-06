@@ -57,9 +57,99 @@ exports.run = async () => {
 
     };
 
+        const response =
+
+        await tradeService.executeTrade(
+
+            request
+
+        );
+
     /*
     ======================================================
-    Response 2 continues here.
+    Validate Response
+    ======================================================
+    */
+
+    assert(
+
+        response,
+
+        "Trade service returned no response."
+
+    );
+
+    assertEqual(
+
+        typeof response.success,
+
+        "boolean",
+
+        "Response.success should be boolean."
+
+    );
+
+    /*
+    ======================================================
+    Version 2.1 Expected Behaviour
+    ======================================================
+    */
+
+    assert(
+
+        response.success === false,
+
+        "Pending orders should not execute in Version 2.1."
+
+    );
+
+    assert(
+
+        response.transactionId,
+
+        "Transaction ID missing."
+
+    );
+
+    assertEqual(
+
+        response.executionType,
+
+        "BUY_LIMIT",
+
+        "Execution type mismatch."
+
+    );
+
+    assert(
+
+        response.message,
+
+        "Response message missing."
+
+    );
+
+    assert(
+
+        response.message.includes(
+
+            "Pending order framework"
+
+        ),
+
+        "Unexpected pending order message."
+
+    );
+
+    console.log(
+
+        "Pending order framework responded correctly."
+
+    );
+
+    /*
+    ======================================================
+    Response 3 continues here.
     ======================================================
     */
 
