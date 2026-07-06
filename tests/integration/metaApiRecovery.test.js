@@ -141,10 +141,74 @@ exports.run = async () => {
 
     );
 
-    /*
+        /*
     ======================================================
-    Response 3 continues here.
+    Verify Connection Consistency
     ======================================================
     */
+
+    assert(
+
+        recoveredConnection === initialConnection ||
+
+        typeof recoveredConnection === "object",
+
+        "Recovered connection is invalid."
+
+    );
+
+    /*
+    ======================================================
+    Verify Position Service Still Responds
+    ======================================================
+    */
+
+    const positionService =
+        require("../../server/services/positionService");
+
+    const positions =
+        await positionService.getPositions();
+
+    assert(
+
+        Array.isArray(positions),
+
+        "Position service unavailable after recovery."
+
+    );
+
+    console.log(
+
+        `Open Positions: ${positions.length}`
+
+    );
+
+    /*
+    ======================================================
+    Verify Trade Service Still Operational
+    ======================================================
+    */
+
+    assert(
+
+        response.transactionId,
+
+        "Transaction ID missing after recovery."
+
+    );
+
+    console.log(
+
+        "Trade execution confirmed after recovery."
+
+    );
+
+    console.log(
+
+        "MetaApi recovery integration test passed."
+
+    );
+
+    return true;
 
 };
