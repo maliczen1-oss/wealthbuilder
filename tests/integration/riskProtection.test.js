@@ -92,42 +92,26 @@ exports.run = async () => {
 
     );
 
-    let duplicateRejected = false;
-
-    try {
-
+    const duplicateResponse =
         await tradeService.executeTrade(
-
             duplicateRequest
-
         );
-
-    }
-
-    catch (error) {
-
-        duplicateRejected = true;
-
-        assert(
-
-            error.message.includes(
-
-                "already has an open position"
-
-            ),
-
-            "Unexpected duplicate position error."
-
-        );
-
-    }
 
     assert(
+        duplicateResponse.success === false,
+        "Duplicate position should be rejected."
+    );
 
-        duplicateRejected,
+    assert(
+        duplicateResponse.message,
+        "Duplicate position rejection message missing."
+    );
 
-        "Duplicate position protection failed."
-
+    assert(
+        duplicateResponse.message.includes(
+            "open position"
+        ),
+        "Unexpected duplicate position rejection message."
     );
 
     console.log(
@@ -142,15 +126,36 @@ exports.run = async () => {
     ======================================================
     */
 
+    const testSymbols = [
+
+        "EURUSD",
+        "GBPUSD",
+        "USDJPY",
+        "AUDUSD",
+        "USDCAD",
+        "USDCHF",
+        "NZDUSD",
+        "XAUUSD",
+        "NAS100",
+        "US30"
+
+    ];
+
     let maximumProtectionVerified = false;
 
     try {
 
         for (let i = 0; i < 20; i++) {
 
+            const symbol =
+
+                testSymbols[
+                    i % testSymbols.length
+                ];
+
             await tradeService.executeTrade({
 
-                symbol: `TEST${i}`,
+                symbol,
 
                 action: "BUY",
 
