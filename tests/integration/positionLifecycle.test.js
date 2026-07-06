@@ -64,10 +64,36 @@ exports.run = async () => {
 
     };
 
-    /*
+        /*
     ======================================================
-    Response 2 continues here.
+    Open Position
     ======================================================
     */
+
+    const openResponse =
+
+        await tradeService.executeTrade(
+
+            request
+
+        );
+
+    assert(
+
+        openResponse.success,
+
+        "Position failed to open."
+
+    );
+
+    assert(
+
+        openResponse.positionId ||
+
+        openResponse.orderId,
+
+        "No position/order identifier returned."
+
+    );
 
 };
