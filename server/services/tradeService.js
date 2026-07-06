@@ -135,22 +135,6 @@ class TradeService {
 
     /*
     ======================================================
-    Trade Cluster
-    ======================================================
-    */
-
-    createClusterId(symbol) {
-
-        const date = new Date()
-            .toISOString()
-            .substring(0,10);
-
-        return `CLUSTER-${symbol}-${date}`;
-
-    }
-
-    /*
-    ======================================================
     AI Optimisation
     (Framework V1)
     ======================================================
@@ -293,15 +277,6 @@ class TradeService {
         }
 
         response.symbol = symbol;
-
-        /*
-        ======================================================
-        Trade Cluster
-        ======================================================
-        */
-
-        response.clusterId =
-            this.createClusterId(symbol);
 
         /*
         ======================================================
