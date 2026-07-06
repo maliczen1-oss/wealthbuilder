@@ -371,6 +371,16 @@ evaluateLiquidity(session, spreadPercent) {
 
             result.confidence -= 20;
 
+result.confidenceBreakdown.push({
+
+    factor: "Trend",
+
+    adjustment: -20,
+
+    reason: "Market data appears inconsistent."
+
+});
+
         }
 
         else {
