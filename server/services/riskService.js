@@ -421,12 +421,62 @@ class RiskService {
 
     }
 
-    /*
+        /*
     ======================================================
-    RESPONSE 3 STARTS HERE
-
-    Replace everything from this marker
-    through the end of the file.
-
+    Configuration
     ======================================================
     */
+
+    getConfiguration() {
+
+        return {
+
+            ...CONFIG
+
+        };
+
+    }
+
+    /*
+    ======================================================
+    Health
+    ======================================================
+    */
+
+    getHealth() {
+
+        return {
+
+            service: "riskService",
+
+            version: this.VERSION,
+
+            status: "healthy",
+
+            configuration: this.getConfiguration()
+
+        };
+
+    }
+
+    /*
+    ======================================================
+    Service Information
+    ======================================================
+    */
+
+    getVersion() {
+
+        return this.VERSION;
+
+    }
+
+}
+
+/*
+==========================================================
+Singleton Export
+==========================================================
+*/
+
+module.exports = new RiskService();
