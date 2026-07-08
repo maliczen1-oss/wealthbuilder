@@ -390,16 +390,348 @@ class Logger {
 
     }
 
+        /*
+    ======================================================
+    Public Logging API
+    ======================================================
+    */
+
+    debug(source, message, context = {}) {
+
+        return this.log(
+            "DEBUG",
+            source,
+            message,
+            context
+        );
+
+    }
+
+    info(source, message, context = {}) {
+
+        return this.log(
+            "INFO",
+            source,
+            message,
+            context
+        );
+
+    }
+
+    success(source, message, context = {}) {
+
+        return this.log(
+            "SUCCESS",
+            source,
+            message,
+            context
+        );
+
+    }
+
+    warning(source, message, context = {}) {
+
+        return this.log(
+            "WARNING",
+            source,
+            message,
+            context
+        );
+
+    }
+
+    error(source, message, context = {}) {
+
+        return this.log(
+            "ERROR",
+            source,
+            message,
+            context
+        );
+
+    }
+
+    critical(source, message, context = {}) {
+
+        return this.log(
+            "CRITICAL",
+            source,
+            message,
+            context
+        );
+
+    }
+
     /*
     ======================================================
-    >>>>>>>>>>> RESPONSE 2 STARTS HERE <<<<<<<<<<<<<<<<<<<
+    Compatibility Methods
+    ======================================================
+    */
+
+    getLogs() {
+
+        return [...this.logs];
+
+    }
+
+    getHealth() {
+
+        return this.health;
+
+    }
+
+    getVersion() {
+
+        return CONFIG.VERSION;
+
+    }
+
+    /*
+    ======================================================
+    Read Only Properties
+    ======================================================
+    */
+
+    get history() {
+
+        return [...this.logs];
+
+    }
+
+    get health() {
+
+        return {
+
+            version: CONFIG.VERSION,
+
+            started: this.started,
+
+            uptime:
+
+                Math.floor(
+
+                    (
+
+                        Date.now()
+
+                        -
+
+                        this.started.getTime()
+
+                    ) / 1000
+
+                ),
+
+            totalLogs:
+
+                this.logs.length,
+
+            maxLogs:
+
+                CONFIG.MAX_LOGS,
+
+            logLevel:
+
+                CONFIG.LOG_LEVEL,
+
+            console:
+
+                CONFIG.LOG_TO_CONSOLE
+
+        };
+
+    }
+
+    /*
+    ======================================================
+    Statistics
+    ======================================================
+    */
+
+    getStatistics() {
+
+        const statistics = {
+
+            total:
+
+                this.logs.length,
+
+            levels: {},
+
+            sources: {}
+
+        };
+
+        for (const log of this.logs) {
+
+            statistics.levels[log.level] =
+
+                (
+
+                    statistics.levels[log.level]
+
+                    ||
+
+                    0
+
+                ) + 1;
+
+            statistics.sources[log.source] =
+
+                (
+
+                    statistics.sources[log.source]
+
+                    ||
+
+                    0
+
+                ) + 1;
+
+        }
+
+        return statistics;
+
+    }
+
+    /*
+    ======================================================
+    Search
+    ======================================================
+    */
+
+    getByLevel(level) {
+
+        return this.logs.filter(
+
+            log =>
+
+                log.level === level
+
+        );
+
+    }
+
+    getBySource(source) {
+
+        return this.logs.filter(
+
+            log =>
+
+                log.source === source
+
+        );
+
+    }
+
+    latest(count = 25) {
+
+        return this.logs
+
+            .slice(-count)
+
+            .reverse();
+
+    }
+
+    /*
+    ======================================================
+    Maintenance
+    ======================================================
+    */
+
+    clear() {
+
+        this.logs = [];
+
+        this.info(
+
+            SOURCES.SYSTEM,
+
+            "Logger history cleared."
+
+        );
+
+    }
+
+    /*
+    ======================================================
+    Performance Timers
+    ======================================================
+    */
+
+    startTimer(name) {
+
+        this.timers.set(
+
+            name,
+
+            Date.now()
+
+        );
+
+    }
+
+    endTimer(
+
+        name,
+
+        source = SOURCES.SYSTEM
+
+    ) {
+
+        if (
+
+            !this.timers.has(name)
+
+        ) {
+
+            return null;
+
+        }
+
+        const started =
+
+            this.timers.get(name);
+
+        const duration =
+
+            Date.now()
+
+            -
+
+            started;
+
+        this.timers.delete(name);
+
+        this.debug(
+
+            source,
+
+            `${name} completed`,
+
+            {
+
+                duration,
+
+                unit: "ms"
+
+            }
+
+        );
+
+        return duration;
+
+    }
+
+    /*
+    ======================================================
+    >>>>>>>>>>> RESPONSE 3 STARTS HERE <<<<<<<<<<<<<<<<<<<
     ======================================================
 
-    KEEP THIS COMMENT.
+    KEEP THIS PLACEHOLDER.
 
-    Paste Response 2 immediately below this marker.
-
-    DO NOT DELETE THIS PLACEHOLDER.
+    Paste Response 3 immediately below.
 
     ======================================================
     */
