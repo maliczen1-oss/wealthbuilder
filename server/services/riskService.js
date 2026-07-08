@@ -292,17 +292,11 @@ class RiskService {
                             symbol
                         );
 
-                    minimum =
-                        snapshot.minVolume ??
-                        minimum;
+                    minimum = snapshot.minLot ?? minimum;
 
-                    maximum =
-                        snapshot.maxVolume ??
-                        maximum;
+maximum = snapshot.maxLot ?? maximum;
 
-                    step =
-                        snapshot.volumeStep ??
-                        step;
+step = snapshot.lotStep ?? step;
 
                 } catch (error) {
 
