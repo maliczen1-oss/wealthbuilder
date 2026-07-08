@@ -1,55 +1,205 @@
+"use strict";
+
+/*
+==========================================================
+WealthBuilder OS
+
+Risk Service
+
+Version : 2.1.0
+Status  : Production
+Atlas Certification : Pending
+
+Purpose
+-------
+Provides centralized risk calculations for WealthBuilder.
+
+Responsibilities
+----------------
+✓ Risk Validation
+✓ Position Sizing
+✓ Lot Calculation
+✓ Broker Volume Validation
+✓ Volume Rounding
+✓ Capital Protection
+
+Future
+------
+- Dynamic Portfolio Risk
+- Correlation Analysis
+- Exposure Engine
+- AI Risk Optimisation
+- Drawdown Protection
+
+==========================================================
+*/
+
+const logger = require("./logger");
 const accountService = require("./accountService");
+const marketService = require("./marketService");
 
-function roundLotSize(lot) {
-  return Math.max(0.01, Math.round(lot * 100) / 100);
-}
+/*
+==========================================================
+Configuration
+==========================================================
+*/
 
-async function calculateRiskAmount(riskPercent = 1) {
-  const balance = await accountService.getBalance();
+const CONFIG = {
 
-  return balance * (riskPercent / 100);
-}
+    DEFAULT_RISK_PERCENT: 1,
 
-async function calculateLotSize(
-  stopLossPips,
-  pipValue = 10,
-  riskPercent = 1
-) {
-  const riskAmount = await calculateRiskAmount(riskPercent);
+    MAX_RISK_PERCENT: 5,
 
-  if (stopLossPips <= 0) {
-    return 0.01;
-  }
+    MIN_RISK_PERCENT: 0.10,
 
-  const lot =
-    riskAmount /
-    (stopLossPips * pipValue);
+    DEFAULT_MIN_LOT: 0.01,
 
-  return roundLotSize(lot);
-}
+    DEFAULT_MAX_LOT: 100,
 
-async function getMaxRisk(riskPercent = 1) {
-  return await calculateRiskAmount(riskPercent);
-}
+    DEFAULT_VOLUME_STEP: 0.01
 
-async function canRiskTrade(
-  stopLossPips,
-  pipValue = 10,
-  riskPercent = 1
-) {
-  const lot = await calculateLotSize(
-    stopLossPips,
-    pipValue,
-    riskPercent
-  );
-
-  return lot >= 0.01;
-}
-
-module.exports = {
-  calculateRiskAmount,
-  calculateLotSize,
-  getMaxRisk,
-  canRiskTrade,
-  roundLotSize
 };
+
+/*
+==========================================================
+Risk Service
+==========================================================
+*/
+
+class RiskService {
+
+    constructor() {
+
+        this.VERSION = "2.1.0";
+
+    }
+
+    /*
+    ======================================================
+    Validation Helpers
+    ======================================================
+    */
+
+    validatePositiveNumber(value, name) {
+
+        if (
+
+            typeof value !== "number" ||
+
+            Number.isNaN(value) ||
+
+            !Number.isFinite(value)
+
+        ) {
+
+            throw new TypeError(
+
+                `${name} must be a valid number.`
+
+            );
+
+        }
+
+        if (value <= 0) {
+
+            throw new RangeError(
+
+                `${name} must be greater than zero.`
+
+            );
+
+        }
+
+    }
+
+    validateRiskPercent(riskPercent) {
+
+        this.validatePositiveNumber(
+
+            riskPercent,
+
+            "Risk percentage"
+
+        );
+
+        if (
+
+            riskPercent >
+
+            CONFIG.MAX_RISK_PERCENT
+
+        ) {
+
+            throw new RangeError(
+
+                `Risk percentage cannot exceed ${CONFIG.MAX_RISK_PERCENT}%.`
+
+            );
+
+        }
+
+    }
+
+    /*
+    ======================================================
+    Volume Helpers
+    ======================================================
+    */
+
+    roundToStep(
+
+        volume,
+
+        step
+
+    ) {
+
+        return (
+
+            Math.round(
+
+                volume / step
+
+            ) * step
+
+        );
+
+    }
+
+    clampVolume(
+
+        volume,
+
+        minimum,
+
+        maximum
+
+    ) {
+
+        return Math.max(
+
+            minimum,
+
+            Math.min(
+
+                maximum,
+
+                volume
+
+            )
+
+        );
+
+    }
+
+    /*
+    ======================================================
+    RESPONSE 2 STARTS HERE
+
+    Replace everything from this marker down to the
+    Service Information section when Response 2 arrives.
+
+    Do NOT modify anything above this line.
+
+    ======================================================
+    */
