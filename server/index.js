@@ -36,6 +36,7 @@ const automationRoute = require("./routes/automation");
 const readinessRoute = require("./routes/readiness");
 const guardianRoute = require("./routes/guardian");
 const systemRoute = require("./routes/system");
+const tradeRoute = require("./routes/trade");
 
 /*
 ==========================================================
