@@ -192,14 +192,241 @@ class RiskService {
 
     }
 
+        /*
+    ======================================================
+    Risk Amount
+    ======================================================
+    */
+
+    async calculateRiskAmount(riskPercent = CONFIG.DEFAULT_RISK_PERCENT) {
+
+        try {
+
+            this.validateRiskPercent(riskPercent);
+
+            const balance =
+                await accountService.getBalance();
+
+            this.validatePositiveNumber(
+                balance,
+                "Account balance"
+            );
+
+            return balance * (riskPercent / 100);
+
+        } catch (error) {
+
+            logger.error(
+                logger.SOURCES.RISK,
+                "Failed to calculate risk amount.",
+                {
+                    riskPercent,
+                    error: error.message
+                }
+            );
+
+            throw error;
+
+        }
+
+    }
+
     /*
     ======================================================
-    RESPONSE 2 STARTS HERE
+    Lot Size
+    ======================================================
+    */
 
-    Replace everything from this marker down to the
-    Service Information section when Response 2 arrives.
+    async calculateLotSize(
 
-    Do NOT modify anything above this line.
+        stopLossPips,
+
+        pipValue = 10,
+
+        riskPercent = CONFIG.DEFAULT_RISK_PERCENT,
+
+        symbol = null
+
+    ) {
+
+        try {
+
+            this.validatePositiveNumber(
+                stopLossPips,
+                "Stop loss"
+            );
+
+            this.validatePositiveNumber(
+                pipValue,
+                "Pip value"
+            );
+
+            this.validateRiskPercent(
+                riskPercent
+            );
+
+            const riskAmount =
+                await this.calculateRiskAmount(
+                    riskPercent
+                );
+
+            let volume =
+                riskAmount /
+                (stopLossPips * pipValue);
+
+            let minimum =
+                CONFIG.DEFAULT_MIN_LOT;
+
+            let maximum =
+                CONFIG.DEFAULT_MAX_LOT;
+
+            let step =
+                CONFIG.DEFAULT_VOLUME_STEP;
+
+            if (symbol) {
+
+                try {
+
+                    const snapshot =
+                        await marketService.getMarketSnapshot(
+                            symbol
+                        );
+
+                    minimum =
+                        snapshot.minVolume ??
+                        minimum;
+
+                    maximum =
+                        snapshot.maxVolume ??
+                        maximum;
+
+                    step =
+                        snapshot.volumeStep ??
+                        step;
+
+                } catch (error) {
+
+                    logger.warn(
+                        logger.SOURCES.RISK,
+                        "Unable to retrieve broker volume specification. Using defaults.",
+                        {
+                            symbol,
+                            error: error.message
+                        }
+                    );
+
+                }
+
+            }
+
+            volume =
+                this.roundToStep(
+                    volume,
+                    step
+                );
+
+            volume =
+                this.clampVolume(
+                    volume,
+                    minimum,
+                    maximum
+                );
+
+            return volume;
+
+        } catch (error) {
+
+            logger.error(
+                logger.SOURCES.RISK,
+                "Lot size calculation failed.",
+                {
+                    stopLossPips,
+                    pipValue,
+                    riskPercent,
+                    symbol,
+                    error: error.message
+                }
+            );
+
+            throw error;
+
+        }
+
+    }
+
+    /*
+    ======================================================
+    Volume Rounding
+    ======================================================
+    */
+
+    roundLotSize(
+
+        volume,
+
+        step = CONFIG.DEFAULT_VOLUME_STEP
+
+    ) {
+
+        this.validatePositiveNumber(
+            volume,
+            "Volume"
+        );
+
+        this.validatePositiveNumber(
+            step,
+            "Volume step"
+        );
+
+        return this.roundToStep(
+            volume,
+            step
+        );
+
+    }
+
+    /*
+    ======================================================
+    Maximum Risk
+    ======================================================
+    */
+
+    getMaxRisk() {
+
+        return CONFIG.MAX_RISK_PERCENT;
+
+    }
+
+    /*
+    ======================================================
+    Trade Validation
+    ======================================================
+    */
+
+    canRiskTrade(riskPercent) {
+
+        try {
+
+            this.validateRiskPercent(
+                riskPercent
+            );
+
+            return true;
+
+        } catch {
+
+            return false;
+
+        }
+
+    }
+
+    /*
+    ======================================================
+    RESPONSE 3 STARTS HERE
+
+    Replace everything from this marker
+    through the end of the file.
 
     ======================================================
     */
