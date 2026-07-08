@@ -1,26 +1,47 @@
+"use strict";
+
 /*
 ==========================================================
 WealthBuilder OS
+
 Logger Service
 
-Version : 3.0.0
-Status  : Enterprise
+Version : 3.1.0
+Status  : Production
+Atlas Certification : Certified
+
 Owner   : Atlas Architecture
 Powered by Jarvis Intelligence
 
-Description:
-Central logging service for the entire WealthBuilder
-Operating System.
+Purpose
+-------
+Enterprise-grade centralized logging service used
+throughout WealthBuilder OS.
 
-Every module reports through this logger.
+Responsibilities
+----------------
+✓ Centralized Logging
+✓ Structured Log Entries
+✓ Enterprise Log Levels
+✓ Runtime Statistics
+✓ Health Reporting
+✓ Performance Timers
+✓ Search & Filtering
+✓ Memory Protection
+✓ Railway Compatible
+✓ Atlas Certified
 
-Supported Levels:
-- DEBUG
-- INFO
-- SUCCESS
-- WARNING
-- ERROR
-- CRITICAL
+Backward Compatibility
+----------------------
+✓ Version 3.0 Compatible
+✓ getLogs()
+✓ getHealth()
+✓ getVersion()
+✓ history getter
+✓ latest()
+✓ getByLevel()
+✓ getBySource()
+
 ==========================================================
 */
 
@@ -32,9 +53,14 @@ Configuration
 ==========================================================
 */
 
-const CONFIG = {
+const CONFIG = Object.freeze({
 
-    MAX_LOGS: 5000,
+    VERSION: "3.1.0",
+
+    MAX_LOGS:
+        Number(
+            process.env.MAX_LOGS || 5000
+        ),
 
     LOG_TO_CONSOLE:
         process.env.LOG_TO_CONSOLE !== "false",
@@ -42,7 +68,7 @@ const CONFIG = {
     LOG_LEVEL:
         process.env.LOG_LEVEL || "DEBUG"
 
-};
+});
 
 /*
 ==========================================================
@@ -50,7 +76,7 @@ Log Levels
 ==========================================================
 */
 
-const LEVELS = {
+const LEVELS = Object.freeze({
 
     DEBUG: 0,
 
@@ -64,17 +90,18 @@ const LEVELS = {
 
     CRITICAL: 5
 
-};
+});
 
 /*
 ==========================================================
 Standard Sources
 
-Every service should use one of these.
+Every certified module should use one of these.
+
 ==========================================================
 */
 
-const SOURCES = {
+const SOURCES = Object.freeze({
 
     SYSTEM: "SYSTEM",
 
@@ -88,17 +115,37 @@ const SOURCES = {
 
     MARKET: "MARKET",
 
+    POSITION: "POSITION",
+
+    SYMBOL: "SYMBOL",
+
     STRATEGY: "STRATEGY",
 
     DECISION: "DECISION",
 
+    DECISION_REPORT: "DECISION_REPORT",
+
     EXECUTION: "EXECUTION",
+
+    TRADE: "TRADE",
+
+    TRADE_LIFECYCLE: "TRADE_LIFECYCLE",
+
+    PERFORMANCE: "PERFORMANCE",
+
+    ANALYTICS: "ANALYTICS",
+
+    HISTORY: "HISTORY",
+
+    AUTOMATION: "AUTOMATION",
+
+    READINESS: "READINESS",
 
     GUARDIAN: "GUARDIAN",
 
     RISK: "RISK",
 
-    AUTOMATION: "AUTOMATION",
+    VALIDATION: "VALIDATION",
 
     LEARNING: "LEARNING",
 
@@ -106,13 +153,25 @@ const SOURCES = {
 
     PSYCHOLOGY: "PSYCHOLOGY",
 
-    JARVIS: "JARVIS",
+    MORNING_BRIEF: "MORNING_BRIEF",
 
     NOTIFICATION: "NOTIFICATION",
 
-    USER: "USER"
+    MARKET_CONTEXT: "MARKET_CONTEXT",
 
-};
+    MARKET_STATE: "MARKET_STATE",
+
+    SENTINEL: "SENTINEL",
+
+    ORCHESTRATOR: "ORCHESTRATOR",
+
+    JARVIS: "JARVIS",
+
+    USER: "USER",
+
+    LOGS: "LOGS"
+
+});
 
 /*
 ==========================================================
@@ -126,8 +185,9 @@ class Logger {
 
         this.logs = [];
 
-        this.started =
-            new Date();
+        this.started = new Date();
+
+        this.timers = new Map();
 
     }
 
@@ -142,7 +202,6 @@ class Logger {
         return (
 
             LEVELS[level] >=
-
             LEVELS[CONFIG.LOG_LEVEL]
 
         );
@@ -187,7 +246,7 @@ class Logger {
 
         this.logs.push(entry);
 
-        if (
+        while (
 
             this.logs.length >
 
@@ -202,6 +261,7 @@ class Logger {
         return entry;
 
     }
+
     /*
     ======================================================
     Console Output
@@ -219,9 +279,7 @@ class Logger {
         const prefix =
 
             `[${entry.timestamp}] ` +
-
             `[${entry.level}] ` +
-
             `[${entry.source}]`;
 
         switch (entry.level) {
@@ -229,13 +287,9 @@ class Logger {
             case "DEBUG":
 
                 console.debug(
-
                     prefix,
-
                     entry.message,
-
                     entry.context
-
                 );
 
                 break;
@@ -243,13 +297,9 @@ class Logger {
             case "INFO":
 
                 console.info(
-
                     prefix,
-
                     entry.message,
-
                     entry.context
-
                 );
 
                 break;
@@ -257,13 +307,9 @@ class Logger {
             case "SUCCESS":
 
                 console.log(
-
                     prefix,
-
                     entry.message,
-
                     entry.context
-
                 );
 
                 break;
@@ -271,13 +317,9 @@ class Logger {
             case "WARNING":
 
                 console.warn(
-
                     prefix,
-
                     entry.message,
-
                     entry.context
-
                 );
 
                 break;
@@ -287,13 +329,9 @@ class Logger {
             case "CRITICAL":
 
                 console.error(
-
                     prefix,
-
                     entry.message,
-
                     entry.context
-
                 );
 
                 break;
@@ -304,7 +342,7 @@ class Logger {
 
     /*
     ======================================================
-    Core Logger
+    Core Logging Engine
     ======================================================
     */
 
@@ -354,377 +392,14 @@ class Logger {
 
     /*
     ======================================================
-    Public API
+    >>>>>>>>>>> RESPONSE 2 STARTS HERE <<<<<<<<<<<<<<<<<<<
+    ======================================================
+
+    KEEP THIS COMMENT.
+
+    Paste Response 2 immediately below this marker.
+
+    DO NOT DELETE THIS PLACEHOLDER.
+
     ======================================================
     */
-
-    debug(
-
-        source,
-
-        message,
-
-        context = {}
-
-    ) {
-
-        return this.log(
-
-            "DEBUG",
-
-            source,
-
-            message,
-
-            context
-
-        );
-
-    }
-
-    info(
-
-        source,
-
-        message,
-
-        context = {}
-
-    ) {
-
-        return this.log(
-
-            "INFO",
-
-            source,
-
-            message,
-
-            context
-
-        );
-
-    }
-
-    success(
-
-        source,
-
-        message,
-
-        context = {}
-
-    ) {
-
-        return this.log(
-
-            "SUCCESS",
-
-            source,
-
-            message,
-
-            context
-
-        );
-
-    }
-
-    warning(
-
-        source,
-
-        message,
-
-        context = {}
-
-    ) {
-
-        return this.log(
-
-            "WARNING",
-
-            source,
-
-            message,
-
-            context
-
-        );
-
-    }
-
-    error(
-
-        source,
-
-        message,
-
-        context = {}
-
-    ) {
-
-        return this.log(
-
-            "ERROR",
-
-            source,
-
-            message,
-
-            context
-
-        );
-
-    }
-
-    critical(
-
-        source,
-
-        message,
-
-        context = {}
-
-    ) {
-
-        return this.log(
-
-            "CRITICAL",
-
-            source,
-
-            message,
-
-            context
-
-        );
-
-    }
-    /*
-    ======================================================
-    Read-Only Properties
-    ======================================================
-    */
-
-    get history() {
-
-        return [...this.logs];
-
-    }
-
-    get health() {
-
-        return {
-
-            started: this.started,
-
-            uptime:
-
-                Math.floor(
-
-                    (Date.now() -
-
-                    this.started.getTime())
-
-                    / 1000
-
-                ),
-
-            totalLogs:
-
-                this.logs.length,
-
-            maxLogs:
-
-                CONFIG.MAX_LOGS
-
-        };
-
-    }
-
-    /*
-    ======================================================
-    Statistics
-    ======================================================
-    */
-
-    getStatistics() {
-
-        const statistics = {
-
-            total: this.logs.length,
-
-            levels: {},
-
-            sources: {}
-
-        };
-
-        for (const log of this.logs) {
-
-            statistics.levels[log.level] =
-
-                (statistics.levels[log.level] || 0) + 1;
-
-            statistics.sources[log.source] =
-
-                (statistics.sources[log.source] || 0) + 1;
-
-        }
-
-        return statistics;
-
-    }
-
-    /*
-    ======================================================
-    Search
-    ======================================================
-    */
-
-    getByLevel(level) {
-
-        return this.logs.filter(
-
-            log => log.level === level
-
-        );
-
-    }
-
-    getBySource(source) {
-
-        return this.logs.filter(
-
-            log => log.source === source
-
-        );
-
-    }
-
-    latest(count = 25) {
-
-        return this.logs
-
-            .slice(-count)
-
-            .reverse();
-
-    }
-
-    /*
-    ======================================================
-    Maintenance
-    ======================================================
-    */
-
-    clear() {
-
-        this.logs = [];
-
-    }
-
-    /*
-    ======================================================
-    Performance Timer
-    ======================================================
-    */
-
-    startTimer(name) {
-
-        if (!this.timers) {
-
-            this.timers = new Map();
-
-        }
-
-        this.timers.set(
-
-            name,
-
-            Date.now()
-
-        );
-
-    }
-
-    endTimer(
-
-        name,
-
-        source = SOURCES.SYSTEM
-
-    ) {
-
-        if (
-
-            !this.timers ||
-
-            !this.timers.has(name)
-
-        ) {
-
-            return null;
-
-        }
-
-        const started =
-
-            this.timers.get(name);
-
-        const duration =
-
-            Date.now() - started;
-
-        this.timers.delete(name);
-
-        this.debug(
-
-            source,
-
-            `${name} completed`,
-
-            {
-
-                duration:
-
-                    `${duration} ms`
-
-            }
-
-        );
-
-        return duration;
-
-    }
-
-}
-
-/*
-==========================================================
-Singleton Export
-==========================================================
-*/
-
-const logger = new Logger();
-
-/*
-==========================================================
-Expose Constants
-==========================================================
-*/
-
-logger.LEVELS = Object.freeze(LEVELS);
-
-logger.SOURCES = Object.freeze(SOURCES);
-
-logger.CONFIG = Object.freeze(CONFIG);
-
-/*
-==========================================================
-Export
-==========================================================
-*/
-
-module.exports = logger;
