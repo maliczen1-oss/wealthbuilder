@@ -123,4 +123,191 @@ router.get("/", (req, res) => {
 
                 error: error.message
 
-           
+            }
+
+        );
+
+        return sendError(
+
+            res,
+
+            500,
+
+            error.message
+
+        );
+
+    }
+
+});
+
+/*
+==========================================================
+POST /settings
+==========================================================
+*/
+
+router.post("/settings", (req, res) => {
+
+    try {
+
+        if (
+
+            !req.body ||
+
+            typeof req.body !== "object"
+
+        ) {
+
+            return sendError(
+
+                res,
+
+                400,
+
+                "Settings payload is required."
+
+            );
+
+        }
+
+        logger.info(
+
+            logger.SOURCES.AUTOMATION,
+
+            "Automation settings update requested."
+
+        );
+
+        const settings =
+            automationEngine.updateSettings(
+                req.body
+            );
+
+        return sendSuccess(
+
+            res,
+
+            settings,
+
+            "Automation settings updated."
+
+        );
+
+    }
+
+    catch (error) {
+
+        logger.error(
+
+            logger.SOURCES.AUTOMATION,
+
+            "Automation settings update failed.",
+
+            {
+
+                error: error.message
+
+            }
+
+        );
+
+        return sendError(
+
+            res,
+
+            500,
+
+            error.message
+
+        );
+
+    }
+
+});
+
+/*
+==========================================================
+GET /health
+==========================================================
+*/
+
+router.get("/health", (req, res) => {
+
+    try {
+
+        const health =
+
+            automationEngine.getHealth
+                ? automationEngine.getHealth()
+                : {
+
+                    service: "automation",
+
+                    status: "READY"
+
+                };
+
+        return sendSuccess(
+
+            res,
+
+            health,
+
+            "Automation service healthy."
+
+        );
+
+    }
+
+    catch (error) {
+
+        return sendError(
+
+            res,
+
+            500,
+
+            error.message
+
+        );
+
+    }
+
+});
+
+/*
+==========================================================
+GET /version
+==========================================================
+*/
+
+router.get("/version", (req, res) => {
+
+    return sendSuccess(
+
+        res,
+
+        {
+
+            version:
+
+                automationEngine.getVersion
+                    ? automationEngine.getVersion()
+                    : "Unknown"
+
+        },
+
+        "Automation Engine Version"
+
+    );
+
+});
+
+/*
+==========================================================
+Export
+==========================================================
+*/
+
+module.exports = router;
