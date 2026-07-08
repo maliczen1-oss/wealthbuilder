@@ -83,19 +83,13 @@ class RiskService {
     validatePositiveNumber(value, name) {
 
         if (
-
             typeof value !== "number" ||
-
             Number.isNaN(value) ||
-
             !Number.isFinite(value)
-
         ) {
 
             throw new TypeError(
-
                 `${name} must be a valid number.`
-
             );
 
         }
@@ -103,9 +97,7 @@ class RiskService {
         if (value <= 0) {
 
             throw new RangeError(
-
                 `${name} must be greater than zero.`
-
             );
 
         }
@@ -115,25 +107,14 @@ class RiskService {
     validateRiskPercent(riskPercent) {
 
         this.validatePositiveNumber(
-
             riskPercent,
-
             "Risk percentage"
-
         );
 
-        if (
-
-            riskPercent >
-
-            CONFIG.MAX_RISK_PERCENT
-
-        ) {
+        if (riskPercent > CONFIG.MAX_RISK_PERCENT) {
 
             throw new RangeError(
-
                 `Risk percentage cannot exceed ${CONFIG.MAX_RISK_PERCENT}%.`
-
             );
 
         }
@@ -146,321 +127,27 @@ class RiskService {
     ======================================================
     */
 
-    roundToStep(
-
-        volume,
-
-        step
-
-    ) {
+    roundToStep(volume, step) {
 
         return (
-
-            Math.round(
-
-                volume / step
-
-            ) * step
-
+            Math.round(volume / step) * step
         );
 
     }
 
-    clampVolume(
-
-        volume,
-
-        minimum,
-
-        maximum
-
-    ) {
+    clampVolume(volume, minimum, maximum) {
 
         return Math.max(
-
             minimum,
-
-            Math.min(
-
-                maximum,
-
-                volume
-
-            )
-
+            Math.min(maximum, volume)
         );
 
     }
 
     /*
     ======================================================
-    Risk Amount
+    Response 2 starts here.
+    Do not modify anything below this marker until
+    Response 2.
     ======================================================
     */
-
-    async calculateRiskAmount(riskPercent = CONFIG.DEFAULT_RISK_PERCENT) {
-
-        try {
-
-            this.validateRiskPercent(riskPercent);
-
-            const balance =
-                await accountService.getBalance();
-
-            this.validatePositiveNumber(
-                balance,
-                "Account balance"
-            );
-
-            return balance * (riskPercent / 100);
-
-        } catch (error) {
-
-            logger.error(
-                logger.SOURCES.RISK,
-                "Failed to calculate risk amount.",
-                {
-                    riskPercent,
-                    error: error.message
-                }
-            );
-
-            throw error;
-
-        }
-
-    }
-
-    /*
-    ======================================================
-    Lot Size
-    ======================================================
-    */
-
-    async calculateLotSize(
-
-        stopLossPips,
-
-        pipValue = 10,
-
-        riskPercent = CONFIG.DEFAULT_RISK_PERCENT,
-
-        symbol = null
-
-    ) {
-
-        try {
-
-            this.validatePositiveNumber(
-                stopLossPips,
-                "Stop loss"
-            );
-
-            this.validatePositiveNumber(
-                pipValue,
-                "Pip value"
-            );
-
-            this.validateRiskPercent(
-                riskPercent
-            );
-
-            const riskAmount =
-                await this.calculateRiskAmount(
-                    riskPercent
-                );
-
-let volume = riskAmount / (stopLossPips * pipValue);
-let minimum = CONFIG.DEFAULT_MIN_LOT;
-let maximum = CONFIG.DEFAULT_MAX_LOT;
-let step = CONFIG.DEFAULT_VOLUME_STEP;
-
-            if (symbol) {
-
-                try {
-
-                    const snapshot =
-                        await marketService.getMarketSnapshot(
-                            symbol
-                        );
-
-minimum = snapshot.minLot ?? minimum;
-maximum = snapshot.maxLot ?? maximum;
-step = snapshot.lotStep ?? step;
-
-                } catch (error) {
-
-                    logger.warn(
-                        logger.SOURCES.RISK,
-                        "Unable to retrieve broker volume specification. Using defaults.",
-                        {
-                            symbol,
-                            error: error.message
-                        }
-                    );
-
-                }
-
-            }
-
-            volume =
-                this.roundToStep(
-                    volume,
-                    step
-                );
-
-            volume =
-                this.clampVolume(
-                    volume,
-                    minimum,
-                    maximum
-                );
-
-            return volume;
-
-        } catch (error) {
-
-            logger.error(
-                logger.SOURCES.RISK,
-                "Lot size calculation failed.",
-                {
-                    stopLossPips,
-                    pipValue,
-                    riskPercent,
-                    symbol,
-                    error: error.message
-                }
-            );
-
-            throw error;
-
-        }
-
-    }
-
-    /*
-    ======================================================
-    Volume Rounding
-    ======================================================
-    */
-
-    roundLotSize(
-
-        volume,
-
-        step = CONFIG.DEFAULT_VOLUME_STEP
-
-    ) {
-
-        this.validatePositiveNumber(
-            volume,
-            "Volume"
-        );
-
-        this.validatePositiveNumber(
-            step,
-            "Volume step"
-        );
-
-        return this.roundToStep(
-            volume,
-            step
-        );
-
-    }
-
-    /*
-    ======================================================
-    Maximum Risk
-    ======================================================
-    */
-
-    getMaxRisk() {
-
-        return CONFIG.MAX_RISK_PERCENT;
-
-    }
-
-    /*
-    ======================================================
-    Trade Validation
-    ======================================================
-    */
-
-    canRiskTrade(riskPercent) {
-
-        try {
-
-            this.validateRiskPercent(
-                riskPercent
-            );
-
-            return true;
-
-        } catch {
-
-            return false;
-
-        }
-
-    }
-
-        /*
-    ======================================================
-    Configuration
-    ======================================================
-    */
-
-    getConfiguration() {
-
-        return {
-
-            ...CONFIG
-
-        };
-
-    }
-
-    /*
-    ======================================================
-    Health
-    ======================================================
-    */
-
-    getHealth() {
-
-        return {
-
-            service: "riskService",
-
-            version: this.VERSION,
-
-            status: "healthy",
-
-            configuration: this.getConfiguration()
-
-        };
-
-    }
-
-    /*
-    ======================================================
-    Service Information
-    ======================================================
-    */
-
-    getVersion() {
-
-        return this.VERSION;
-
-    }
-
-}
-
-/*
-==========================================================
-Singleton Export
-==========================================================
-*/
-
-module.exports = new RiskService();
