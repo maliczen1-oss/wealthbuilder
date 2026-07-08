@@ -284,10 +284,8 @@ let step = CONFIG.DEFAULT_VOLUME_STEP;
                             symbol
                         );
 
-                    minimum = snapshot.minLot ?? minimum;
-
+minimum = snapshot.minLot ?? minimum;
 maximum = snapshot.maxLot ?? maximum;
-
 step = snapshot.lotStep ?? step;
 
                 } catch (error) {
