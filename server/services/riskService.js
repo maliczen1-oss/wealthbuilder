@@ -270,12 +270,9 @@ class RiskService {
                     riskPercent
                 );
 
-            let volume = riskAmount / (stopLossPips * pipValue);
-
+let volume = riskAmount / (stopLossPips * pipValue);
 let minimum = CONFIG.DEFAULT_MIN_LOT;
-
 let maximum = CONFIG.DEFAULT_MAX_LOT;
-
 let step = CONFIG.DEFAULT_VOLUME_STEP;
 
             if (symbol) {
